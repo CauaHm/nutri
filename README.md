@@ -10,7 +10,8 @@ refeições calculado e comparação semana a semana), um **comparativo biológi
 entre você e seu parceiro de treino, catálogo de alimentos (cadastro manual ou por
 foto com IA) e alertas quando uma meta do dia é batida ou passada.
 
-Construído em Next.js (App Router) + MongoDB (contas, convites, competições) +
+Construído em Vite + React + TypeScript (frontend puro, SPA) + Vercel Serverless
+Functions em TypeScript (backend) + MongoDB (contas, convites, competições) +
 Redis/Upstash (dados do dia a dia) pra rodar na Vercel, com navegação de app nativo
 (barra inferior + telas que abrem uma sobre a outra, dias de treino reordenáveis por
 arrastar) e suporte a "Adicionar à tela de início" (PWA) no celular.
@@ -22,7 +23,10 @@ npm install
 npm run dev
 ```
 
-Abre em http://localhost:3000. Cria um arquivo `.env.local` (ignorado pelo git) com:
+Abre em http://localhost:5173 (a porta que o Vite escolher). As funções serverless em
+`api/` não rodam com `npm run dev` (isso é só o frontend) — pra testar o backend
+localmente é preciso `vercel dev` (requer login na Vercel). Cria um arquivo
+`.env.local` (ignorado pelo git) com:
 
 ```
 MONGODB_URI="sua connection string do MongoDB Atlas"
@@ -39,7 +43,8 @@ em banco nenhum antes.
 
 1. Suba este projeto num repositório no GitHub.
 2. Em vercel.com, "Add New Project" → importe o repositório. Framework é detectado
-   automaticamente como Next.js.
+   automaticamente como Vite; os arquivos em `api/` viram Serverless Functions
+   automaticamente (convenção de arquivo do Vercel, sem configuração extra).
 3. Adicione um banco **MongoDB** (contas, convites, competições):
    - Crie grátis em mongodb.com/cloud/atlas → cluster free tier → "Connect" →
      "Drivers" → copie a connection string (troque `<password>` pela senha real e
@@ -69,29 +74,37 @@ cheia, sem barra de navegador, como um app nativo.
 ## Estrutura do projeto
 
 ```
-app/
-  page.js                orquestra login/cadastro, navegação, popups
-  api/auth/               cadastro, login, logout, editar perfil (sessão por cookie)
-  api/invites/            convidar por e-mail, listar e responder convites
-  api/competition/        dados da dupla atual (pontos, rodada, sair)
-  api/kv/[key]/           API genérica de leitura/escrita no Redis (autorizada por sessão)
-  api/food/analyze/      analisa foto de alimento com a API da Anthropic (opcional)
-lib/
-  repo.js                 acesso ao Mongo: usuários, sessões, convites, competições
-  db.js                    conexão Mongo (com fallback em arquivo pra dev sem banco)
-  authSession.js           sessão por cookie + regras de quem pode ler/escrever cada chave
-  useAuth.js               hook de autenticação no cliente (cadastro/login/logout/perfil)
-  useCompetition.js        hook de convites e competição (a dupla)
-  useAppData.js            hook central: treino, refeições, água, ranking, recados...
-  useBodyComp.js           hook do módulo de Composição Corporal (sexo/altura/idade vêm da conta)
-  useFoodCatalog.js        hook do catálogo pessoal de alimentos
-  useGoalAlerts.js         dispara o popup quando uma meta do dia é batida/passada
-  bodycomp.js              fórmulas de % gordura, TMB/TDEE, déficit, macros, comparação
-  points.js                regra de pontos do ranking + soma de kcal/proteína das refeições
-components/
-  AuthScreen.js            tela de login/cadastro
-  screens/                 uma tela por arquivo — telas raiz (bottom nav) e telas empilhadas
-  tabs/                    pedaços de UI reaproveitados dentro das telas (ex: RankingTab)
+index.html                Vite entry HTML (meta tags, manifest, ícones)
+src/
+  main.tsx                 monta <App/> no #root
+  App.tsx                  orquestra login/cadastro, navegação, popups (ex-app/page.js)
+  globals.css              estilos globais
+  lib/
+    useAuth.ts               hook de autenticação no cliente (cadastro/login/logout/perfil)
+    useCompetition.ts        hook de convites e competição (a dupla)
+    useAppData.ts            hook central: treino, refeições, água, ranking, recados...
+    useBodyComp.ts           hook do módulo de Composição Corporal (sexo/altura/idade vêm da conta)
+    useFoodCatalog.ts        hook do catálogo pessoal de alimentos
+    useGoalAlerts.ts         dispara o popup quando uma meta do dia é batida/passada
+    bodycomp.ts              fórmulas de % gordura, TMB/TDEE, déficit, macros, comparação
+    points.ts                regra de pontos do ranking + soma de kcal/proteína das refeições
+    clientStorage.ts         fetch fino sobre /api/kv/*
+  components/
+    AuthScreen.tsx           tela de login/cadastro
+    screens/                 uma tela por arquivo — telas raiz (bottom nav) e telas empilhadas
+    tabs/                    pedaços de UI reaproveitados dentro das telas (ex: RankingTab)
+api/                       Vercel Serverless Functions (TypeScript) — cada arquivo é uma rota
+  auth/                     cadastro, login, logout, editar perfil (sessão por cookie)
+  invites/                  convidar por e-mail, listar e responder convites
+  competition.ts            dados da dupla atual (pontos, rodada, sair)
+  kv/                       API genérica de leitura/escrita no Redis (autorizada por sessão)
+  food/analyze.ts           analisa foto de alimento com a API da Anthropic (opcional)
+  _lib/                     código server-only (prefixo _ pra Vercel não tratar como rota)
+    repo.ts                  acesso ao Mongo: usuários, sessões, convites, competições
+    db.ts                    conexão Mongo (com fallback em arquivo pra dev sem banco)
+    store.ts                 conexão Redis/Upstash (com fallback em arquivo pra dev sem banco)
+    authSession.ts           sessão por cookie + regras de quem pode ler/escrever cada chave
+public/                    ícones, manifest.json (servido como está pelo Vite)
 reference/
   ShapeMewtwo.original.jsx   o protótipo original, mantido só de referência
 ```
