@@ -1,9 +1,3 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Stack
 
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+Vite + React + TypeScript (SPA, `src/`) with Vercel Serverless Functions (`api/`, TypeScript, `@vercel/node`). No Next.js — it was removed after Next 16.3.1 and 15.5.23 both failed to serve any route on Vercel (build succeeded, every deployed path 404'd). Server-only code lives under `api/_lib/`; never import it from `src/`.
