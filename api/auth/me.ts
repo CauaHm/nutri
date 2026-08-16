@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../_lib/types";
 import { getSessionUser } from "../_lib/authSession";
 import { updateUser, publicUser } from "../_lib/repo";
 import type { User } from "../_lib/repo";

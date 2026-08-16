@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../_lib/types";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSessionUser } from "../_lib/authSession";
 

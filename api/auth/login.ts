@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../_lib/types";
 import { verifyLogin, createSession, publicUser } from "../_lib/repo";
 import { setSessionCookie } from "../_lib/authSession";
 

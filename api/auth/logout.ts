@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../_lib/types";
 import { deleteSession } from "../_lib/repo";
 import { SESSION_COOKIE, clearSessionCookie } from "../_lib/authSession";
 

@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../_lib/types";
 import { kvGetMany } from "../_lib/store";
 import { getSessionUser, canReadKey } from "../_lib/authSession";
 import { getPartnerId } from "../_lib/repo";
