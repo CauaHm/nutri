@@ -23,10 +23,11 @@ npm install
 npm run dev
 ```
 
-Abre em http://localhost:5173 (a porta que o Vite escolher). As funções serverless em
-`api/` não rodam com `npm run dev` (isso é só o frontend) — pra testar o backend
-localmente é preciso `vercel dev` (requer login na Vercel). Cria um arquivo
-`.env.local` (ignorado pelo git) com:
+Abre em http://localhost:5173 (a porta que o Vite escolher). Um plugin do Vite
+(`apiDevServer.ts`) intercepta as chamadas pra `/api/*` e roda as funções de
+`api/` de verdade nesse mesmo processo — não precisa de `vercel dev`/login na
+Vercel pra testar o backend localmente, só existe em dev (nunca roda em
+produção). Cria um arquivo `.env.local` (ignorado pelo git) com:
 
 ```
 MONGODB_URI="sua connection string do MongoDB Atlas"
