@@ -6,6 +6,7 @@ import {
 } from "@/components/icons";
 import { CARD2, PINK, CYAN, GRN, AMB, RED, PURP, SUB, BORDER, TEXT, sCard, sBtn, sInp } from "@/lib/theme";
 import RingProgress from "@/components/RingProgress";
+import StatusWindow from "@/components/StatusWindow";
 import type { ScreenProps } from "@/lib/screenProps";
 
 export default function HomeScreen({ data, nav }: ScreenProps) {
@@ -64,6 +65,17 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
           <RingProgress pct={Math.min(100, (weeklyDone / weeklyTarget) * 100)} size={64} stroke={6} color={GRN} Icon={IconDumbbell} value={`${weeklyDone}/${weeklyTarget}`} label="treinos" />
           <RingProgress pct={(todayPts / 5) * 100} size={64} stroke={6} color={PURP} Icon={IconStar} value={`${todayPts}/5`} label="hoje" onClick={() => nav.push("ranking")} />
         </div>
+
+        {/* O Sistema — camada de progressao RPG (aditiva, ve os mesmos dados) */}
+        {data.rpg.ready && (
+          <button
+            onClick={() => nav.push("sistema")}
+            className="tapable fade-in-up"
+            style={{ display: "block", width: "100%", border: "none", background: "none", padding: 0, marginBottom: 10, cursor: "pointer", textAlign: "left" }}
+          >
+            <StatusWindow rpg={data.rpg} compact />
+          </button>
+        )}
 
         {/* Refeicoes de hoje */}
         <div className="fade-in-up" style={{ ...sCard, padding: 16, marginBottom: 10 }}>
@@ -137,7 +149,7 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
           <div className="fade-in-up" style={{ ...sCard, padding: 14, marginBottom: 10, display: "flex", gap: 7 }}>
             {[["completo", "Completo", GRN], ["parcial", "Parcial", AMB], ["none", "Não fiz", RED]].map(([k, l, c]) => (
               <button
-                key={k} onClick={() => saveCheck(today, k)} className="tapable"
+                key={k} onClick={() => { saveCheck(today, k); if (k !== "none") data.rpg.registrarTreinoConcluido(k); }} className="tapable"
                 style={{ flex: 1, padding: "8px 2px", background: checkEntry?.status === k ? `${c}25` : "#ffffff08", border: `1px solid ${checkEntry?.status === k ? c : BORDER}`, borderRadius: 9, color: checkEntry?.status === k ? c : SUB, fontSize: 10.5, cursor: "pointer", fontWeight: checkEntry?.status === k ? 700 : 500 }}
               >
                 {l}

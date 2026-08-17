@@ -3,6 +3,8 @@ import { kvGet, kvSet, kvGetMany } from "./clientStorage";
 import { todayStr } from "./dates";
 import { calcPontos, itensDaRefeicao, totaisDoDia, type MealLog, type WaterEntry, type CheckEntry } from "./points";
 import { defaultRefeicoes, defaultCompras, defaultReceitas, defaultTreinoGenerico, type RefeicaoConfig, type CompraItem, type Receita, type TreinoDia } from "./defaults";
+import { useBodyComp } from "./useBodyComp";
+import { useRPG } from "./useRPG";
 import type { User } from "./types";
 import type { CompetitionApi } from "./useCompetition";
 import type { LiveWorkoutSession } from "./liveWorkout";
@@ -222,6 +224,24 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
 
   const todayTotais = userId ? totaisDoDia(mealLog, todayStr()) : { kcal: 0, proteina: 0 };
 
+  // "O Sistema" (camada de progressao RPG) — le os mesmos dados em paralelo,
+  // nunca muda como calcPontos/o resto acima funciona. useBodyComp aqui e
+  // uma segunda instancia isolada, so pra alimentar o atributo VIT.
+  const bodyComp = useBodyComp(authUser);
+  const rpg = useRPG({
+    ready: ready && bodyComp.ready,
+    userId,
+    outroId,
+    user,
+    temParceiro: !!outroUser,
+    checks,
+    mealLog,
+    waters,
+    treino,
+    weightLogs,
+    bodyCompHistorico: bodyComp.historico,
+  });
+
   return {
     ready, userId, outroId, user, outroUser,
     config: { metaPontos, appName: "Rotina & Metas" },
@@ -241,6 +261,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     enviarConvite: comp.enviarConvite,
     responderConvite: comp.responderConvite,
     sairCompeticao: comp.sairCompeticao,
+    rpg,
   };
 }
 

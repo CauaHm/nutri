@@ -3,9 +3,25 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { loadHistoricoDe } from "@/lib/useBodyComp";
 import { calcGorduraNavy, calcMassas, calcTMB, classificarGordura, type MedicaoEntry, type Sexo } from "@/lib/bodycomp";
 import { CARD2, SUB, sCard } from "@/lib/theme";
+import { RANKS, type Rank } from "@/lib/rpg";
 import CompareChart, { type CompareSeries } from "@/components/CompareChart";
 import type { ScreenProps } from "@/lib/screenProps";
 import type { User } from "@/lib/types";
+
+function RankBadge({ rank, nivel }: { rank: Rank; nivel: number }) {
+  const cor = (RANKS.find((r) => r.key === rank) || RANKS[0]).color;
+  return (
+    <span
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 2, marginTop: 4,
+        border: `1px solid ${cor}77`, color: cor, fontSize: 9.5, fontWeight: 800,
+        fontFamily: 'ui-monospace, "SF Mono", Consolas, monospace', letterSpacing: 0.3,
+      }}
+    >
+      {rank} · Nv.{nivel}
+    </span>
+  );
+}
 
 const num = (v: any): number | null => (v === "" || v === null || v === undefined ? null : Number(v));
 const fmt = (v: number | null | undefined, casas = 1): string => (v === null || v === undefined || Number.isNaN(v) ? "—" : v.toFixed(casas));
@@ -34,6 +50,7 @@ function StatRow({ label, a, b, corA, corB, unidade = "" }: { label: string; a: 
 
 export default function ComparativoScreen({ data, nav }: ScreenProps) {
   const { user, outroUser, outroId, temParceiro } = data;
+  const rpg = data.rpg;
   const [historicoParceiro, setHistoricoParceiro] = useState<MedicaoEntry[] | null>(null);
   const [historicoMeu, setHistoricoMeu] = useState<MedicaoEntry[] | null>(null);
 
@@ -92,12 +109,14 @@ export default function ComparativoScreen({ data, nav }: ScreenProps) {
             <div style={{ fontSize: 26 }}>{user.emoji}</div>
             <div style={{ fontWeight: 800, fontSize: 13, color: user.cor }}>{user.nome.split(" ")[0]}</div>
             <div style={{ fontSize: 9.5, color: SUB }}>{user.sexo === "F" ? "Feminino" : "Masculino"} · {user.idade || "—"} anos</div>
+            {rpg.ready && <div><RankBadge rank={rpg.rank} nivel={rpg.nivel} /></div>}
           </div>
           <div style={{ color: SUB, fontSize: 11, fontWeight: 700 }}>vs</div>
           <div style={{ textAlign: "center", flex: 1 }}>
             <div style={{ fontSize: 26 }}>{outroUser.emoji}</div>
             <div style={{ fontWeight: 800, fontSize: 13, color: outroUser.cor }}>{outroUser.nome.split(" ")[0]}</div>
             <div style={{ fontSize: 9.5, color: SUB }}>{outroUser.sexo === "F" ? "Feminino" : "Masculino"} · {outroUser.idade || "—"} anos</div>
+            {rpg.parceiro?.ready && <div><RankBadge rank={rpg.parceiro.rank} nivel={rpg.parceiro.nivel} /></div>}
           </div>
         </div>
 

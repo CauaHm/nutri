@@ -153,6 +153,7 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
   const finalizar = async () => {
     const resumo = computeSummary(session, preSessionWeightLogs.current);
     await saveCheck(todayStr(), resumo.status);
+    if (resumo.status !== "none") data.rpg.registrarTreinoConcluido(resumo.status);
     for (const ex of session.exercises) {
       const doneWeights = ex.sets.filter((s) => s.done && s.weight).map((s) => parseFloat(s.weight!) || 0);
       if (!doneWeights.length) continue;
