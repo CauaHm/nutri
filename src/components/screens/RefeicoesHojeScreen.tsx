@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { todayStr } from "@/lib/dates";
 import { itensDaRefeicao, somaItens, type MealItem } from "@/lib/points";
 import { useFoodCatalog, type Alimento } from "@/lib/useFoodCatalog";
+import { useOfflineQueueSnapshot } from "@/lib/useOfflineQueueSnapshot";
 import { IconPlus, IconTrash, IconBook, IconChevronRight } from "@/components/icons";
-import { PINK, PURP, GRN, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { PINK, PURP, GRN, AMB, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
 import type { ScreenProps } from "@/lib/screenProps";
 import type { RefeicaoConfig } from "@/lib/defaults";
+
+const EMPTY_PENDING_SET: ReadonlySet<string | number> = new Set();
 
 interface MealRowProps {
   meal: RefeicaoConfig;
@@ -14,9 +17,10 @@ interface MealRowProps {
   onAdd: (item: Omit<MealItem, "id">) => void;
   onRemove: (itemId: number | string) => void;
   catalog: Alimento[];
+  pendingIds: ReadonlySet<string | number>;
 }
 
-function MealRow({ meal, itens, onAdd, onRemove, catalog }: MealRowProps) {
+function MealRow({ meal, itens, onAdd, onRemove, catalog, pendingIds }: MealRowProps) {
   const [open, setOpen] = useState(false);
   const [modo, setModo] = useState<"catalogo" | "livre">("catalogo");
   const [alimentoId, setAlimentoId] = useState("");
@@ -62,7 +66,12 @@ function MealRow({ meal, itens, onAdd, onRemove, catalog }: MealRowProps) {
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
             {itens.map((it) => (
               <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11.5, background: "#ffffff06", borderRadius: 7, padding: "5px 8px" }}>
-                <span style={{ color: TEXT }}>{it.nome} <span style={{ color: SUB }}>· {it.kcal}kcal{it.proteina ? ` · ${it.proteina}g prot` : ""}</span></span>
+                <span style={{ color: TEXT, display: "flex", alignItems: "center", gap: 5 }}>
+                  {pendingIds.has(it.id) && (
+                    <span title="Ainda não sincronizado" style={{ width: 6, height: 6, borderRadius: "50%", background: AMB, flexShrink: 0 }} />
+                  )}
+                  {it.nome} <span style={{ color: SUB }}>· {it.kcal}kcal{it.proteina ? ` · ${it.proteina}g prot` : ""}</span>
+                </span>
                 <button onClick={() => onRemove(it.id)} style={{ background: "none", border: "none", color: SUB, cursor: "pointer", padding: 2, flexShrink: 0 }}><IconTrash size={13} /></button>
               </div>
             ))}
@@ -116,8 +125,24 @@ export default function RefeicoesHojeScreen({ data, nav }: ScreenProps) {
   const { userId, user, refeicoesCfg, mealLog, addFoodToMeal, removeFoodFromMeal } = data;
   const catalog = useFoodCatalog(userId);
   const [dateSel, setDateSel] = useState(todayStr());
+  const queue = useOfflineQueueSnapshot();
 
   const diaLog = mealLog[dateSel] || {};
+
+  // ids de itens ainda na fila offline (intencao addFood pendente) pra esta
+  // data — usado so pro indicador visual de pendencia (bolinha), agrupado
+  // por refeicao pra nao recalcular em cada MealRow.
+  const pendingByMeal = useMemo(() => {
+    const map = new Map<string, Set<string | number>>();
+    for (const q of queue.items) {
+      if (q.payload.kind !== "intent") continue;
+      const intent = q.payload.intent;
+      if (intent.tipo !== "addFood" || intent.data !== dateSel) continue;
+      if (!map.has(intent.mealId)) map.set(intent.mealId, new Set());
+      map.get(intent.mealId)!.add(intent.item.id);
+    }
+    return map;
+  }, [queue.items, dateSel]);
 
   return (
     <div style={{ minHeight: "100%", paddingBottom: 60 }}>
@@ -148,6 +173,7 @@ export default function RefeicoesHojeScreen({ data, nav }: ScreenProps) {
                 catalog={catalog.alimentos}
                 onAdd={(item) => addFoodToMeal(dateSel, meal.id, item)}
                 onRemove={(itemId) => removeFoodFromMeal(dateSel, meal.id, itemId)}
+                pendingIds={pendingByMeal.get(meal.id) || EMPTY_PENDING_SET}
               />
             ))}
           </div>

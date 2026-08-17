@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { User } from "./types";
+import { ensureCacheIsolation } from "./apiCacheGuard";
 
 export interface AuthApi {
   user: User | null;
@@ -22,6 +23,21 @@ export function useAuth(): AuthApi {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Cobre login, signup, refresh de boot e logout de uma vez so — os quatro
+  // atualizam `user`, entao um unico efeito basta pra limpar o cache de API
+  // do SW sempre que a conta ativa muda (ou desloga), evitando que dado de
+  // um usuario apareca, mesmo que momentaneamente, pra outro no mesmo
+  // navegador. Precisa esperar `ready` — `user` comeca `null` no primeiro
+  // render (antes do fetch de boot resolver), e sem esse guard isso seria
+  // lido como "deslogou", apagando o cache de API a CADA carregamento de
+  // pagina (inclusive logado), mesmo quando a sessao vai se confirmar valida
+  // um instante depois — destruindo bem na hora o fallback offline que essa
+  // mesma pagina poderia precisar se o reload aconteceu sem rede.
+  useEffect(() => {
+    if (!ready) return;
+    ensureCacheIsolation(user?._id ?? null);
+  }, [ready, user?._id]);
 
   const call = async (url: string, body: any): Promise<{ ok: boolean; user?: User; error?: string }> => {
     const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
