@@ -1,55 +1,39 @@
-import { Redis } from "@upstash/redis";
-import fs from "fs";
-import path from "path";
+import { getDb, usingLocalFallback } from "./db";
 
-// Store generico chave->valor (JSON). Em producao usa o Redis (Upstash),
-// que e o unico jeito de ter dados persistentes e compartilhados entre
-// Cauã e Rhebecca na Vercel (funcoes serverless nao guardam nada em disco
-// entre uma chamada e outra). Sem as env vars da Upstash configuradas
-// (ex: rodando `npm run dev` local sem conta criada ainda), cai para um
-// arquivo JSON em .data/ so pra dev nao travar.
+// Store generico chave->valor (JSON) pra dados do dia a dia (treino,
+// refeicoes, agua, composicao corporal, catalogo de alimentos...).
+// Usa a mesma conexao MongoDB da camada de contas (api/_lib/db.ts, colecao
+// "kv", documentos {_id: key, value}) — nao depende de nenhum servico
+// externo alem do Mongo que o projeto ja usa. Sem MONGODB_URI configurada
+// (dev local), getDb() ja cai sozinho pro fallback em arquivo JSON.
 
-const hasRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
-const redis = hasRedis ? Redis.fromEnv() : null;
-
-const DATA_DIR = path.join(process.cwd(), ".data");
-const DATA_FILE = path.join(DATA_DIR, "store.json");
-
-function readFileStore(): Record<string, any> {
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-  } catch {
-    return {};
-  }
-}
-function writeFileStore(obj: Record<string, any>) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2));
+interface KVDoc {
+  _id: string;
+  value: any;
 }
 
 export async function kvGet(key: string): Promise<any> {
-  if (hasRedis) return (await redis!.get(key)) ?? null;
-  const all = readFileStore();
-  return key in all ? all[key] : null;
+  const db = await getDb();
+  const doc = await db.collection<KVDoc>("kv").findOne({ _id: key });
+  return doc ? doc.value : null;
 }
 
 export async function kvSet(key: string, value: any): Promise<void> {
-  if (hasRedis) {
-    await redis!.set(key, value);
-    return;
+  const db = await getDb();
+  const kv = db.collection<KVDoc>("kv");
+  const existing = await kv.findOne({ _id: key });
+  if (existing) {
+    await kv.updateOne({ _id: key }, { $set: { value } });
+  } else {
+    await kv.insertOne({ _id: key, value });
   }
-  const all = readFileStore();
-  all[key] = value;
-  writeFileStore(all);
 }
 
 export async function kvGetMany(keys: string[]): Promise<Record<string, any>> {
-  if (hasRedis) {
-    const vals = await redis!.mget(...keys);
-    return Object.fromEntries(keys.map((k, i) => [k, vals[i] ?? null]));
-  }
-  const all = readFileStore();
-  return Object.fromEntries(keys.map((k) => [k, k in all ? all[k] : null]));
+  const db = await getDb();
+  const rows = await (await db.collection<KVDoc>("kv").find({ _id: { $in: keys } })).toArray();
+  const byKey = new Map(rows.map((r) => [r._id, r.value]));
+  return Object.fromEntries(keys.map((k) => [k, byKey.has(k) ? byKey.get(k) : null]));
 }
 
-export const usingLocalFallback = !hasRedis;
+export { usingLocalFallback };
