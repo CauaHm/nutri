@@ -4,6 +4,8 @@ import BottomNav from "@/components/BottomNav";
 import PrizeModal from "@/components/PrizeModal";
 import GoalAlertPopup from "@/components/GoalAlertPopup";
 import RestTimerBar from "@/components/RestTimerBar";
+import OfflineBanner from "@/components/OfflineBanner";
+import UpdatePrompt from "@/components/UpdatePrompt";
 import { useAuth, type AuthApi } from "@/lib/useAuth";
 import { useCompetition } from "@/lib/useCompetition";
 import { useAppData } from "@/lib/useAppData";
@@ -120,8 +122,15 @@ function AppShell({ auth }: { auth: AuthApi & { user: User } }) {
 export default function App() {
   const auth = useAuth();
 
-  if (!auth.ready) return null;
-  if (!auth.user) return <AuthScreen auth={auth} />;
-
-  return <AppShell key={auth.user._id} auth={auth as AuthApi & { user: User }} />;
+  // OfflineBanner/UpdatePrompt ficam aqui fora (nunca dentro de AppShell,
+  // que remonta via `key={auth.user._id}` a cada troca de conta) porque sao
+  // preocupacoes de nivel de pagina — leem de um store externo
+  // (useSyncExternalStore) e precisam sobreviver a esse remount.
+  return (
+    <>
+      <OfflineBanner />
+      <UpdatePrompt />
+      {!auth.ready ? null : !auth.user ? <AuthScreen auth={auth} /> : <AppShell key={auth.user._id} auth={auth as AuthApi & { user: User }} />}
+    </>
+  );
 }

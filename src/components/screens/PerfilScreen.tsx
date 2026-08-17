@@ -1,11 +1,13 @@
 import { useState } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { IconLogOut, IconChevronRight, IconUserPlus, IconFlame, IconDroplet, IconActivity } from "@/components/icons";
-import { CARD2, SUB, BORDER, TEXT, PURP, PINK, CYAN, RED, COR_PALETTE, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { CARD2, SUB, BORDER, TEXT, PURP, PINK, CYAN, AMB, RED, COR_PALETTE, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { useOfflineQueueSnapshot } from "@/lib/useOfflineQueueSnapshot";
 import type { ScreenProps } from "@/lib/screenProps";
 
 export default function PerfilScreen({ data, nav, auth }: ScreenProps) {
   const { user, temParceiro, outroUser, sairCompeticao } = data;
+  const queue = useOfflineQueueSnapshot();
   const [temp, setTemp] = useState({
     nome: user.nome, emoji: user.emoji, cor: user.cor, sexo: user.sexo || "M",
     altura: user.altura || "", idade: user.idade || "",
@@ -104,6 +106,13 @@ export default function PerfilScreen({ data, nav, auth }: ScreenProps) {
             </button>
           )}
         </div>
+
+        {(queue.pending > 0 || queue.problematic > 0) && (
+          <div style={{ ...sCard, marginBottom: 14, padding: "10px 14px", fontSize: 11.5, color: AMB }}>
+            {queue.pending} alteraç{queue.pending === 1 ? "ão" : "ões"} pendente{queue.pending === 1 ? "" : "s"} de sincronização
+            {queue.problematic > 0 && <span style={{ color: RED }}>, {queue.problematic} com erro</span>}
+          </div>
+        )}
 
         <button onClick={() => auth.logout()} className="tapable" style={{ width: "100%", background: "none", border: `1px solid ${BORDER}`, borderRadius: 10, color: SUB, fontSize: 12, fontWeight: 700, padding: "12px 0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
           <IconLogOut size={15} /> Sair da conta

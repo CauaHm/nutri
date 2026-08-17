@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { kvGet, kvSet, kvGetMany } from "./clientStorage";
+import { enqueueIntent } from "./offlineQueue";
+import { applyAddFood, applyRemoveFood, applySetWater, applySetCheck, applyAddWeightLog } from "./mutations";
 import { todayStr } from "./dates";
-import { calcPontos, itensDaRefeicao, totaisDoDia, type MealLog, type WaterEntry, type CheckEntry } from "./points";
+import { calcPontos, totaisDoDia, type MealLog, type WaterEntry, type CheckEntry, type MealItem } from "./points";
 import { defaultRefeicoes, defaultCompras, defaultReceitas, defaultTreinoGenerico, type RefeicaoConfig, type CompraItem, type Receita, type TreinoDia } from "./defaults";
 import { useBodyComp } from "./useBodyComp";
 import { useRPG } from "./useRPG";
@@ -111,37 +113,35 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
   }, [userId]);
 
   // ---- log de refeicoes: cada refeicao guarda uma lista de itens comidos ----
-  const persistMealLog = useCallback(async (next: MealLog) => {
+  // addFoodToMeal/removeFoodFromMeal enfileiram uma intencao semantica (nao
+  // um kvSet de objeto inteiro) — assim o flush da fila offline reconcilia
+  // sobre o estado mais recente do servidor em vez de sobrescrever com um
+  // snapshot local que pode ja estar desatualizado.
+  const addFoodToMeal = useCallback((date: string, mealId: string, item: Record<string, any>) => {
+    const newItem = { id: Date.now(), qty: 1, ...item } as MealItem; // id gerado uma unica vez — reaproveitado pelo estado local E pela intencao enfileirada, e o que torna o replay idempotente
+    const next = applyAddFood(mealLog, date, mealId, newItem);
     setMealLogState(next);
-    await kvSet(`${userId}_refeicoes_log`, next);
     const { pts } = calcPontos(authUser, next, waters, checks, roundStart);
     checkWinAfter(pts);
-  }, [userId, authUser, waters, checks, roundStart, checkWinAfter]);
-
-  const addFoodToMeal = useCallback((date: string, mealId: string, item: Record<string, any>) => {
-    const dia = { ...(mealLog[date] || {}) };
-    const itens = itensDaRefeicao(dia[mealId]);
-    dia[mealId] = [...itens, { id: Date.now(), qty: 1, ...item } as (typeof itens)[number]];
-    return persistMealLog({ ...mealLog, [date]: dia });
-  }, [mealLog, persistMealLog]);
+    return enqueueIntent(userId!, { tipo: "addFood", data: date, mealId, item: newItem });
+  }, [mealLog, waters, checks, roundStart, authUser, userId, checkWinAfter]);
 
   const removeFoodFromMeal = useCallback((date: string, mealId: string, itemId: number | string) => {
-    const dia = { ...(mealLog[date] || {}) };
-    const itens = itensDaRefeicao(dia[mealId]).filter((it) => it.id !== itemId);
-    dia[mealId] = itens;
-    return persistMealLog({ ...mealLog, [date]: dia });
-  }, [mealLog, persistMealLog]);
+    const next = applyRemoveFood(mealLog, date, mealId, itemId);
+    setMealLogState(next);
+    const { pts } = calcPontos(authUser, next, waters, checks, roundStart);
+    checkWinAfter(pts);
+    return enqueueIntent(userId!, { tipo: "removeFood", data: date, mealId, itemId });
+  }, [mealLog, waters, checks, roundStart, authUser, userId, checkWinAfter]);
 
   // ---- agua ----
   const saveWater = useCallback(async (date: string, liters: number) => {
-    const next = waters.find((l) => l.date === date)
-      ? waters.map((l) => (l.date === date ? { ...l, liters } : l))
-      : [{ date, liters }, ...waters];
+    const next = applySetWater(waters, date, liters);
     setWatersState(next);
-    await kvSet(`${userId}_water`, next);
     const { pts } = calcPontos(authUser, mealLog, next, checks, roundStart);
     checkWinAfter(pts);
-  }, [waters, userId, authUser, mealLog, checks, roundStart, checkWinAfter]);
+    await enqueueIntent(userId!, { tipo: "setWater", data: date, litros: liters });
+  }, [waters, mealLog, checks, roundStart, authUser, userId, checkWinAfter]);
 
   const delWater = useCallback(async (date: string) => {
     const next = waters.filter((l) => l.date !== date);
@@ -157,14 +157,12 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
 
   // ---- check de treino ----
   const saveCheck = useCallback(async (date: string, status: string) => {
-    const next = checks.find((l) => l.date === date)
-      ? checks.map((l) => (l.date === date ? { ...l, status } : l))
-      : [{ date, status }, ...checks];
+    const next = applySetCheck(checks, date, status);
     setChecksState(next);
-    await kvSet(`${userId}_check`, next);
     const { pts } = calcPontos(authUser, mealLog, waters, next, roundStart);
     checkWinAfter(pts);
-  }, [checks, userId, authUser, mealLog, waters, roundStart, checkWinAfter]);
+    await enqueueIntent(userId!, { tipo: "setCheck", data: date, status });
+  }, [checks, mealLog, waters, roundStart, authUser, userId, checkWinAfter]);
 
   const delCheck = useCallback(async (date: string) => {
     const next = checks.filter((l) => l.date !== date);
@@ -182,11 +180,19 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
   }, [winner, historico, comp]);
 
   // ---- registro de carga (peso levantado) ----
+  // Forma funcional do setState (nao `next = [...weightLogs]` capturado no
+  // closure) — LiveWorkoutScreen.finalizar() chama isto em loop, um por
+  // exercicio, dentro do mesmo ciclo de render; com o closure antigo, cada
+  // iteracao partia do mesmo `weightLogs` e so a ultima sobrevivia (bug
+  // pre-existente). Seguro aqui porque esta funcao nunca chama
+  // checkWinAfter (nao precisa de um `next` sincrono pra mais nada) — as
+  // outras 4 funcoes acima precisam do `next` sincrono e nao sao chamadas
+  // em loop, entao continuam na forma anterior.
   const saveWeightLog = useCallback(async (entry: Omit<WeightLog, "id">) => {
-    const next = [{ id: Date.now(), ...entry }, ...weightLogs];
-    setWeightLogsState(next);
-    await kvSet(`${userId}_wlogs`, next);
-  }, [weightLogs, userId]);
+    const full: WeightLog = { id: Date.now(), ...entry };
+    setWeightLogsState((prev) => applyAddWeightLog(prev, full));
+    await enqueueIntent(userId!, { tipo: "addWeightLog", entry: full });
+  }, [userId]);
   const delWeightLog = useCallback(async (id: number) => {
     const next = weightLogs.filter((l) => l.id !== id);
     setWeightLogsState(next);
