@@ -4,11 +4,13 @@
 import type { AppData } from "./useAppData";
 import type { NavApi } from "./types";
 import type { AuthApi } from "./useAuth";
+import type { RestTimerApi } from "./useRestTimer";
 
 export interface ScreenProps {
   data: AppData;
   nav: NavApi;
   auth: AuthApi;
+  rest: RestTimerApi;
   params?: any;
 }
 

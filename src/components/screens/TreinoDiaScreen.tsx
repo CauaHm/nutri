@@ -2,6 +2,7 @@ import { useState } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { IconEdit, IconTrash, IconPlus } from "@/components/icons";
 import { PURP, PINK, GRN, RED, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { getRestSeconds, inferDefaultRestSeconds } from "@/lib/restTimer";
 import type { ScreenProps } from "@/lib/screenProps";
 import type { Exercicio } from "@/lib/defaults";
 
@@ -12,8 +13,8 @@ interface DiaMetaTemp {
   info: string;
 }
 
-export default function TreinoDiaScreen({ data, nav, params }: ScreenProps) {
-  const { user, treino, saveTreino } = data;
+export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps) {
+  const { user, treino, saveTreino, liveSession, saveLiveSession } = data;
   const di = params?.dayIndex;
   const dia = treino?.[di];
 
@@ -25,6 +26,7 @@ export default function TreinoDiaScreen({ data, nav, params }: ScreenProps) {
   const [editDiaMeta, setEditDiaMeta] = useState(false);
   const [diaMetaTemp, setDiaMetaTemp] = useState<DiaMetaTemp | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [confirmSwitchSessao, setConfirmSwitchSessao] = useState(false);
 
   if (!dia || !treino) {
     return (
@@ -104,6 +106,10 @@ export default function TreinoDiaScreen({ data, nav, params }: ScreenProps) {
                   {([["nome", "Nome"], ["proto", "Protocolo"], ["foco", "Foco muscular"], ["nota", "Notas"]] as const).map(([k, l]) => (
                     <div key={k}><label style={sLbl}>{l}</label><input style={sInp} value={editData[k] || ""} onChange={(e) => setEditData((p) => ({ ...p, [k]: e.target.value }))} /></div>
                   ))}
+                  <div>
+                    <label style={sLbl}>Descanso entre séries (segundos)</label>
+                    <input style={sInp} type="number" value={editData.restSeconds ?? ""} placeholder={String(inferDefaultRestSeconds(editData, dia))} onChange={(e) => setEditData((p) => ({ ...p, restSeconds: e.target.value ? Number(e.target.value) : undefined }))} />
+                  </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                     <button style={{ ...sBtn(GRN), flex: 1 }} onClick={confirmEdit}>Salvar</button>
                     <button style={{ ...sBtn("#444"), flex: 1 }} onClick={() => setEditEx(null)}>Cancelar</button>
@@ -118,6 +124,7 @@ export default function TreinoDiaScreen({ data, nav, params }: ScreenProps) {
                     </div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
                       <span style={{ background: CARD2, color: PURP, fontSize: 10.5, padding: "3px 8px", borderRadius: 10 }}>{ex.proto}</span>
+                      <button onClick={(e) => { e.stopPropagation(); rest.start(getRestSeconds(ex, dia), ex.nome, { exId: ex.id, dayIndex: di }); }} className="tapable" style={{ background: `${user.cor}20`, border: "none", borderRadius: 8, color: user.cor, fontSize: 10, fontWeight: 700, padding: "5px 9px", cursor: "pointer" }}>▶ Descanso</button>
                       <button onClick={(e) => { e.stopPropagation(); startEdit(ei); }} className="tapable" style={{ background: "none", border: "none", color: SUB, cursor: "pointer", padding: 2 }}><IconEdit size={15} /></button>
                       <button onClick={(e) => { e.stopPropagation(); delEx(ei); }} className="tapable" style={{ background: "none", border: "none", color: SUB, cursor: "pointer", padding: 2 }}><IconTrash size={15} /></button>
                     </div>
@@ -132,6 +139,10 @@ export default function TreinoDiaScreen({ data, nav, params }: ScreenProps) {
               {([["nome", "Nome do exercício"], ["proto", "Protocolo (ex: 3×12)"], ["foco", "Foco muscular"], ["nota", "Notas (opcional)"]] as const).map(([k, l]) => (
                 <div key={k}><label style={sLbl}>{l}</label><input style={sInp} value={newEx[k] || ""} onChange={(e) => setNewEx((p) => ({ ...p, [k]: e.target.value }))} placeholder={l} /></div>
               ))}
+              <div>
+                <label style={sLbl}>Descanso entre séries (segundos)</label>
+                <input style={sInp} type="number" value={newEx.restSeconds ?? ""} placeholder={String(inferDefaultRestSeconds(newEx, dia))} onChange={(e) => setNewEx((p) => ({ ...p, restSeconds: e.target.value ? Number(e.target.value) : undefined }))} />
+              </div>
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                 <button style={{ ...sBtn(user.cor), flex: 1 }} onClick={addEx}>+ Adicionar</button>
                 <button style={{ ...sBtn("#444"), flex: 1 }} onClick={() => setAddingEx(false)}>Cancelar</button>
@@ -143,6 +154,32 @@ export default function TreinoDiaScreen({ data, nav, params }: ScreenProps) {
             </button>
           )}
         </div>
+
+        {dia.exercicios.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            {confirmSwitchSessao ? (
+              <div style={{ ...sCard, padding: 14 }}>
+                <div style={{ fontSize: 12, color: SUB, lineHeight: 1.6, marginBottom: 10 }}>
+                  Você tem um treino em andamento em outro dia ({liveSession?.dayTag}). Iniciar este vai descartar o progresso anterior.
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button style={{ ...sBtn(user.cor), flex: 1 }} onClick={async () => { await saveLiveSession(null); setConfirmSwitchSessao(false); nav.push("treino-live", { dayIndex: di }); }}>Começar mesmo assim</button>
+                  <button style={{ ...sBtn("#444"), flex: 1 }} onClick={() => setConfirmSwitchSessao(false)}>Cancelar</button>
+                </div>
+              </div>
+            ) : (
+              <button
+                style={{ ...sBtn(user.cor, true) }}
+                onClick={() => {
+                  if (liveSession && liveSession.dayIndex !== di) setConfirmSwitchSessao(true);
+                  else nav.push("treino-live", { dayIndex: di });
+                }}
+              >
+                {liveSession?.dayIndex === di ? "▶ Retomar treino" : "▶ Iniciar treino"}
+              </button>
+            )}
+          </div>
+        )}
 
         <div style={{ marginTop: 24 }}>
           {!confirmDel ? (

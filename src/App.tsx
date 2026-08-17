@@ -3,10 +3,12 @@ import AuthScreen from "@/components/AuthScreen";
 import BottomNav from "@/components/BottomNav";
 import PrizeModal from "@/components/PrizeModal";
 import GoalAlertPopup from "@/components/GoalAlertPopup";
+import RestTimerBar from "@/components/RestTimerBar";
 import { useAuth, type AuthApi } from "@/lib/useAuth";
 import { useCompetition } from "@/lib/useCompetition";
 import { useAppData } from "@/lib/useAppData";
 import { useGoalAlerts, type GoalMetric } from "@/lib/useGoalAlerts";
+import { useRestTimer } from "@/lib/useRestTimer";
 import { todayStr } from "@/lib/dates";
 import { BG } from "@/lib/theme";
 import type { User, NavApi } from "@/lib/types";
@@ -20,6 +22,7 @@ import PerfilScreen from "@/components/screens/PerfilScreen";
 import RankingScreen from "@/components/screens/RankingScreen";
 import TreinoDiaScreen from "@/components/screens/TreinoDiaScreen";
 import CargasScreen from "@/components/screens/CargasScreen";
+import LiveWorkoutScreen from "@/components/screens/LiveWorkoutScreen";
 import RefeicoesHojeScreen from "@/components/screens/RefeicoesHojeScreen";
 import RefeicoesConfigScreen from "@/components/screens/RefeicoesConfigScreen";
 import ComposicaoScreen from "@/components/screens/ComposicaoScreen";
@@ -37,6 +40,7 @@ const PUSHED: Record<string, ScreenComponent> = {
   ranking: RankingScreen,
   "treino-dia": TreinoDiaScreen,
   "treino-cargas": CargasScreen,
+  "treino-live": LiveWorkoutScreen,
   "refeicoes-hoje": RefeicoesHojeScreen,
   "refeicoes-config": RefeicoesConfigScreen,
   composicao: ComposicaoScreen,
@@ -79,6 +83,7 @@ function AppShell({ auth }: { auth: AuthApi & { user: User } }) {
   }, [data.user, data.todayTotais, data.waters]);
 
   const { alert, dismiss } = useGoalAlerts(data.userId, alertMetrics);
+  const rest = useRestTimer(data.userId);
 
   if (!data.ready || !data.treino || !data.myStats) return null;
 
@@ -87,6 +92,7 @@ function AppShell({ auth }: { auth: AuthApi & { user: User } }) {
   const RootComp = ROOTS[activeTab];
   const PushedComp = top ? PUSHED[top.screen] : null;
   const winnerUser = winner === user._id ? user : winner === outroUser?._id ? outroUser : null;
+  const isLiveWorkout = top?.screen === "treino-live";
 
   return (
     <div style={{ background: BG, minHeight: "100vh", color: "#ede9f6", fontSize: 13 }}>
@@ -95,15 +101,16 @@ function AppShell({ auth }: { auth: AuthApi & { user: User } }) {
       )}
       <GoalAlertPopup alert={alert} onClose={dismiss} />
 
-      <RootComp data={data} nav={nav} auth={auth} />
+      <RootComp data={data} nav={nav} auth={auth} rest={rest} />
 
       {PushedComp && top && (
         <div key={`${top.screen}-${JSON.stringify(top.params || {})}`} className="screen-push" style={{ position: "fixed", inset: 0, background: BG, zIndex: 25, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-          <PushedComp data={data} nav={nav} auth={auth} params={top.params} />
+          <PushedComp data={data} nav={nav} auth={auth} rest={rest} params={top.params} />
         </div>
       )}
 
-      <BottomNav active={activeTab} accent={data.user.cor} onChange={nav.goTab} />
+      {!isLiveWorkout && <RestTimerBar timer={rest.timer} onAdjust={rest.adjust} onSkip={rest.skip} />}
+      {!isLiveWorkout && <BottomNav active={activeTab} accent={data.user.cor} onChange={nav.goTab} />}
     </div>
   );
 }

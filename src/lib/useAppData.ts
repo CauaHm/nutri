@@ -5,6 +5,7 @@ import { calcPontos, itensDaRefeicao, totaisDoDia, type MealLog, type WaterEntry
 import { defaultRefeicoes, defaultCompras, defaultReceitas, defaultTreinoGenerico, type RefeicaoConfig, type CompraItem, type Receita, type TreinoDia } from "./defaults";
 import type { User } from "./types";
 import type { CompetitionApi } from "./useCompetition";
+import type { LiveWorkoutSession } from "./liveWorkout";
 
 const META_PONTOS_PADRAO = 150;
 
@@ -42,6 +43,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
   const [waters, setWatersState] = useState<WaterEntry[]>([]);
   const [checks, setChecksState] = useState<CheckEntry[]>([]);
   const [weightLogs, setWeightLogsState] = useState<WeightLog[]>([]);
+  const [liveSession, setLiveSessionState] = useState<LiveWorkoutSession | null>(null);
 
   const [outroMealLog, setOutroMealLog] = useState<MealLog>({});
   const [outroWaters, setOutroWaters] = useState<WaterEntry[]>([]);
@@ -65,7 +67,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     (async () => {
       const keys = [
         `${userId}_treino`, `${userId}_refeicoes_cfg`, `${userId}_refeicoes_log`,
-        `${userId}_water`, `${userId}_check`, `${userId}_wlogs`,
+        `${userId}_water`, `${userId}_check`, `${userId}_wlogs`, `${userId}_treino_sessao`,
         `${sharedPrefix}_compras`, `${sharedPrefix}_receitas`, `${sharedPrefix}_recados`,
       ];
       if (outroId) keys.push(`${outroId}_refeicoes_log`, `${outroId}_water`, `${outroId}_check`);
@@ -76,6 +78,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
       setWatersState(v[`${userId}_water`] || []);
       setChecksState(v[`${userId}_check`] || []);
       setWeightLogsState(v[`${userId}_wlogs`] || []);
+      setLiveSessionState(v[`${userId}_treino_sessao`] || null);
       setComprasState(v[`${sharedPrefix}_compras`] || defaultCompras());
       setReceitasState(v[`${sharedPrefix}_receitas`] || defaultReceitas());
       setRecadosState(v[`${sharedPrefix}_recados`] || []);
@@ -188,6 +191,12 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     await kvSet(`${userId}_wlogs`, next);
   }, [weightLogs, userId]);
 
+  // ---- sessao de treino ao vivo (retomavel — 1 de cada vez) ----
+  const saveLiveSession = useCallback(async (next: LiveWorkoutSession | null) => {
+    setLiveSessionState(next);
+    await kvSet(`${userId}_treino_sessao`, next);
+  }, [userId]);
+
   // ---- compras / receitas (pessoal, ou compartilhado se ja tem dupla) ----
   const saveCompras = useCallback(async (next: CompraItem[]) => {
     setComprasState(next);
@@ -223,6 +232,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     checks, saveCheck, delCheck, outroChecks,
     roundStart, historico, novaRodada, showPrize, winner,
     weightLogs, saveWeightLog, delWeightLog,
+    liveSession, saveLiveSession,
     compras, saveCompras, receitas, saveReceitas,
     recados, sendRecado,
     myStats, outroStats,

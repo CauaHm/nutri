@@ -98,6 +98,7 @@ export interface Exercicio {
   proto: string;
   foco: string;
   nota: string;
+  restSeconds?: number;
 }
 
 export interface TreinoDia {
