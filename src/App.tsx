@@ -32,6 +32,7 @@ import ReceitasScreen from "@/components/screens/ReceitasScreen";
 import ComprasScreen from "@/components/screens/ComprasScreen";
 import AlimentosScreen from "@/components/screens/AlimentosScreen";
 import AdicionarAlimentoScreen from "@/components/screens/AdicionarAlimentoScreen";
+import SistemaScreen from "@/components/screens/SistemaScreen";
 
 type ScreenComponent = (props: ScreenProps) => ReactElement | null;
 
@@ -50,6 +51,7 @@ const PUSHED: Record<string, ScreenComponent> = {
   compras: ComprasScreen,
   alimentos: AlimentosScreen,
   "adicionar-alimento": AdicionarAlimentoScreen,
+  sistema: SistemaScreen,
 };
 
 interface StackEntry {

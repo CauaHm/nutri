@@ -168,3 +168,25 @@ export const IconScale = (p: IconProps) => (
 export const IconInbox = (p: IconProps) => (
   <Svg {...p}><path d="M3.5 12h4.5l1.5 2.5h5L16 12h4.5" /><path d="M5.5 6h13L20.5 12v5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-5z" /></Svg>
 );
+
+// --- "O Sistema" (camada RPG) --------------------------------------------
+
+export const IconShield = (p: IconProps) => (
+  <Svg {...p}><path d="M12 3.5 19 6.2v5.3c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6.2z" /><path d="M9 12l2 2 4-4.5" /></Svg>
+);
+
+export const IconTarget = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="12" r="8.2" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /></Svg>
+);
+
+export const IconCrown = (p: IconProps) => (
+  <Svg {...p}><path d="M4 17h16l-1.3-8-4.2 3.3L12 6l-2.5 6.3L5.3 9z" /><path d="M5.5 20h13" /></Svg>
+);
+
+export const IconAward = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="8.5" r="5" /><path d="M9 12.8 7.5 20l4.5-2.5 4.5 2.5-1.5-7.2" /></Svg>
+);
+
+export const IconZap = (p: IconProps) => (
+  <Svg {...p}><path d="M12.5 3 5.5 13h5.2L11 21l7-10.5h-5.2z" /></Svg>
+);

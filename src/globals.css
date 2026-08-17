@@ -67,3 +67,56 @@ button {
 .pop-in {
   animation: popIn 220ms cubic-bezier(.2,.9,.3,1.2) both;
 }
+
+/* --- "O Sistema" (camada RPG) ------------------------------------------- */
+
+@keyframes systemPanelIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.system-panel-in {
+  animation: systemPanelIn 260ms cubic-bezier(.2,.9,.3,1.1) both;
+}
+
+@keyframes xpRise {
+  0% { transform: translateY(4px); opacity: 0; }
+  15% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translateY(-22px); opacity: 0; }
+}
+.xp-toast {
+  animation: xpRise 1400ms ease-out both;
+}
+
+@keyframes xpBarGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.xp-bar-glow {
+  animation: xpBarGlow 1600ms ease-in-out infinite;
+}
+.xp-bar-fill {
+  transition: width 700ms cubic-bezier(.22,.8,.3,1);
+}
+
+@keyframes missionCheckPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.mission-check-pulse {
+  animation: missionCheckPulse 420ms cubic-bezier(.3,.7,.4,1.4) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .system-panel-in,
+  .xp-toast,
+  .xp-bar-glow,
+  .mission-check-pulse {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .xp-bar-fill {
+    transition-duration: 1ms !important;
+  }
+}

@@ -1,8 +1,24 @@
 import { useState } from "react";
 import { IconUserPlus, IconInbox, IconCheck } from "@/components/icons";
 import { CARD, CARD2, PURP, PINK, AMB, GRN, RED, SUB, BORDER, TEXT, sInp, sBtn, sCard } from "@/lib/theme";
+import { RANKS, type Rank } from "@/lib/rpg";
 import type { TabProps } from "@/lib/screenProps";
 import type { AppData } from "@/lib/useAppData";
+
+function RankBadge({ rank, nivel }: { rank: Rank; nivel: number }) {
+  const cor = (RANKS.find((r) => r.key === rank) || RANKS[0]).color;
+  return (
+    <span
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 2,
+        border: `1px solid ${cor}77`, color: cor, fontSize: 9.5, fontWeight: 800,
+        fontFamily: 'ui-monospace, "SF Mono", Consolas, monospace', letterSpacing: 0.3,
+      }}
+    >
+      {rank} · Nv.{nivel}
+    </span>
+  );
+}
 
 function ConvidarParceiro({ data }: { data: AppData }) {
   const [email, setEmail] = useState("");
@@ -67,14 +83,20 @@ export default function RankingTab({ data }: TabProps) {
         🎯 Meta: <span style={{ color: PINK, fontWeight: 700 }}>{config.metaPontos} pts</span> para ganhar · kcal✅=1pt · água✅=1pt · treino completo=3pts · parcial=1pt
       </div>
 
-      {rows.map(({ uid, stats, u }) => (
+      {rows.map(({ uid, stats, u }) => {
+        const ehEu = uid === userId;
+        const rpgInfo = ehEu ? { ready: true, rank: data.rpg.rank, nivel: data.rpg.nivel } : data.rpg.parceiro;
+        return (
         <div key={uid} style={{ background: CARD, borderRadius: 12, border: `2px solid ${u.cor}40`, marginBottom: 12, overflow: "hidden" }}>
           <div style={{ background: `${u.cor}15`, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 28 }}>{u.emoji}</span>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: u.cor }}>{u.nome}</div>
-                <div style={{ fontSize: 11, color: SUB }}>Rodada atual</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: SUB }}>Rodada atual</div>
+                  {rpgInfo?.ready && <RankBadge rank={rpgInfo.rank} nivel={rpgInfo.nivel} />}
+                </div>
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -97,7 +119,8 @@ export default function RankingTab({ data }: TabProps) {
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
 
       <div style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 12, overflow: "hidden" }}>
         <div style={{ padding: "10px 14px", fontWeight: 700, fontSize: 13, color: outroUser.cor }}>💌 Recado pra {outroUser.nome}</div>
