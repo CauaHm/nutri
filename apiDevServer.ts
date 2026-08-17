@@ -17,11 +17,17 @@ type DevVercelResponse = ServerResponse & { status(code: number): DevVercelRespo
 // simulando o req/res que a Vercel entrega em producao. So existe durante
 // `vite dev` — `vite build`/deploy na Vercel nunca executam este arquivo.
 
-try {
-  process.loadEnvFile(".env.local");
-} catch {
-  // sem .env.local: os modulos de dados (api/_lib/db.ts, store.ts) caem
-  // pro fallback em arquivo JSON, igual em qualquer outro dev sem banco.
+// .env.local tem prioridade (convencao Vite) mas aceita .env tambem, ja
+// que e o nome que este projeto vem usando. Sem nenhum dos dois, os
+// modulos de dados (api/_lib/db.ts, store.ts) caem pro fallback em
+// arquivo JSON, igual em qualquer outro dev sem banco.
+for (const file of [".env.local", ".env"]) {
+  try {
+    process.loadEnvFile(file);
+    break;
+  } catch {
+    // tenta o proximo
+  }
 }
 
 const ROUTES: Array<{ re: RegExp; file: string; param?: string }> = [
