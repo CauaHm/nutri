@@ -33,6 +33,8 @@ import ComprasScreen from "@/components/screens/ComprasScreen";
 import AlimentosScreen from "@/components/screens/AlimentosScreen";
 import AdicionarAlimentoScreen from "@/components/screens/AdicionarAlimentoScreen";
 import SistemaScreen from "@/components/screens/SistemaScreen";
+import AtividadeScreen from "@/components/screens/AtividadeScreen";
+import BalancoScreen from "@/components/screens/BalancoScreen";
 
 type ScreenComponent = (props: ScreenProps) => ReactElement | null;
 
@@ -52,6 +54,8 @@ const PUSHED: Record<string, ScreenComponent> = {
   alimentos: AlimentosScreen,
   "adicionar-alimento": AdicionarAlimentoScreen,
   sistema: SistemaScreen,
+  atividade: AtividadeScreen,
+  balanco: BalancoScreen,
 };
 
 interface StackEntry {

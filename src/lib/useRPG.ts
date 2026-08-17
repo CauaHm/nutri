@@ -8,6 +8,7 @@ import { kvGet, kvSet } from "./clientStorage";
 import { todayStr, getWeekStart, daysBetween } from "./dates";
 import { totaisDoDia, type CheckEntry, type WaterEntry, type MealLog } from "./points";
 import { calcTMB, type MedicaoEntry, type Sexo } from "./bodycomp";
+import { gastoExtraDoDia, kcalMetaEfetivaDoDia, type AtividadeExtra } from "./atividades";
 import type { TreinoDia } from "./defaults";
 import type { User } from "./types";
 import {
@@ -81,10 +82,11 @@ export interface StepRPGCtx {
   bodyCompHistorico: MedicaoEntry[];
   altura: number | null;
   partnerMissoesCumpridas: Record<string, DiaMissoes> | null;
+  atividadesExtras: AtividadeExtra[];
 }
 
 function isMarcador(id: string): boolean {
-  return id.endsWith("_protetor") || id.endsWith("_pr_bonus") || id.endsWith("_raid_bonus");
+  return id.endsWith("_protetor") || id.endsWith("_pr_bonus") || id.endsWith("_raid_bonus") || id.endsWith("_atividade_bonus");
 }
 
 // Regra de seguranca #3: o unico efeito de um dia zerado e perder a ofensiva
@@ -154,15 +156,20 @@ function garantirMissoesDoDia(missoesCumpridas: Record<string, DiaMissoes>, ctx:
 }
 
 // Regra de seguranca #1: nutricao so cumpre se kcal do dia estiver dentro da
-// faixa segura [max(TMB, kcalMeta*0.9), kcalMeta*1.1] E proteina na meta.
-// Abaixo do piso -> nunca cumpre (0 XP), sem excecao.
+// faixa segura [max(TMB, kcalMetaEfetiva*0.9), kcalMetaEfetiva*1.1] E proteina
+// na meta. kcalMetaEfetiva sobe em dias de gasto extra alto (ver
+// atividades.ts/kcalMetaEfetivaDoDia) — senao quem faz uma atividade extra
+// grande perde XP justamente por comer o que deveria pra repor. Abaixo do
+// piso -> nunca cumpre (0 XP), sem excecao.
 function derivarCumprimento(missoesCumpridas: Record<string, DiaMissoes>, ctx: StepRPGCtx): Record<string, DiaMissoes> {
   const dia = missoesCumpridas[ctx.today];
   if (!dia) return missoesCumpridas;
 
   const totais = totaisDoDia(ctx.mealLog, ctx.today);
-  const piso = Math.max(ctx.tmb || 0, ctx.user.kcalMeta * 0.9);
-  const teto = ctx.user.kcalMeta * 1.1;
+  const gastoExtraHoje = gastoExtraDoDia(ctx.atividadesExtras, ctx.today);
+  const kcalMetaEfetiva = kcalMetaEfetivaDoDia(ctx.user.kcalMeta, gastoExtraHoje, ctx.tmb);
+  const piso = Math.max(ctx.tmb || 0, kcalMetaEfetiva * 0.9);
+  const teto = kcalMetaEfetiva * 1.1;
   const nutricaoOk = totais.kcal > 0 && totais.kcal >= piso && totais.kcal <= teto && totais.proteina >= ctx.user.proteinaMeta;
 
   const waterEntry = ctx.waters.find((w) => w.date === ctx.today);
@@ -221,6 +228,52 @@ function injetarBonusPR(missoesCumpridas: Record<string, DiaMissoes>, ctx: StepR
   return { ...missoesCumpridas, [ctx.today]: { ...base, missoes: [...base.missoes, marcador] } };
 }
 
+// XP de atividade extra: +15 por atividade, +1 a cada 10kcal estimado, teto
+// de +80/dia (evita farmar registrando atividade inflada). So atividades de
+// HOJE geram bonus — mesma limitacao que o bonus de PR ja tem (registro
+// retroativo alimenta balanco/nutricao normalmente, so nao rende XP de "O
+// Sistema" pra um dia que ja passou). Idempotente por atividade (marcador
+// `${atividade.id}_atividade_bonus`), orcamento diario recalculado a cada
+// chamada a partir do que ja foi injetado.
+const XP_POR_ATIVIDADE = 15;
+const XP_POR_10KCAL_ATIVIDADE = 1;
+const TETO_XP_ATIVIDADE_DIA = 80;
+
+function injetarBonusAtividades(missoesCumpridas: Record<string, DiaMissoes>, ctx: StepRPGCtx): Record<string, DiaMissoes> {
+  const dia = missoesCumpridas[ctx.today];
+  const atividadesHoje = ctx.atividadesExtras.filter((a) => a.date === ctx.today);
+  if (!atividadesHoje.length) return missoesCumpridas;
+
+  const marcadasIds = new Set((dia?.missoes || []).filter((m) => m.id.endsWith("_atividade_bonus")).map((m) => m.id));
+  const pendentes = atividadesHoje.filter((a) => !marcadasIds.has(`${a.id}_atividade_bonus`));
+  if (!pendentes.length) return missoesCumpridas;
+
+  const xpJaDado = (dia?.missoes || []).filter((m) => m.id.endsWith("_atividade_bonus")).reduce((s, m) => s + m.xp, 0);
+  let orcamentoRestante = Math.max(0, TETO_XP_ATIVIDADE_DIA - xpJaDado);
+  if (orcamentoRestante <= 0) return missoesCumpridas;
+
+  const novosMarcadores: MissaoInstance[] = [];
+  for (const a of pendentes) {
+    if (orcamentoRestante <= 0) break;
+    const desejado = XP_POR_ATIVIDADE + Math.floor(a.kcalEstimado / 10) * XP_POR_10KCAL_ATIVIDADE;
+    const xp = Math.min(desejado, orcamentoRestante);
+    novosMarcadores.push({
+      id: `${a.id}_atividade_bonus`,
+      tipo: "bonus",
+      titulo: "Atividade Extra",
+      descricao: `${a.duracaoMin}min de ${a.tipo} registrados — bônus de XP.`,
+      xp,
+      cumprida: true,
+      cumpridaEm: ctx.now,
+    });
+    orcamentoRestante -= xp;
+  }
+  if (!novosMarcadores.length) return missoesCumpridas;
+
+  const base = dia || { date: ctx.today, missoes: [] };
+  return { ...missoesCumpridas, [ctx.today]: { ...base, missoes: [...base.missoes, ...novosMarcadores] } };
+}
+
 function calcularProgressoRaid(mine: Record<string, DiaMissoes>, partner: Record<string, DiaMissoes> | null, weekStart: string): number {
   let total = 0;
   for (let i = 0; i < 7; i++) {
@@ -255,7 +308,8 @@ export function stepRPG(prev: RPGData, ctx: StepRPGCtx): RPGData {
   const redencaoAtiva = t1.redencaoParaHoje || !!t1.missoesCumpridas[today]?.redencaoAtiva;
   const m2 = garantirMissoesDoDia(t1.missoesCumpridas, { today, userId: ctx.userId, checks: ctx.checks, redencaoAtiva });
   const m3 = derivarCumprimento(m2, ctx);
-  const m4 = injetarBonusPR(m3, ctx);
+  const m3b = injetarBonusPR(m3, ctx);
+  const m4 = injetarBonusAtividades(m3b, ctx);
 
   const weekStart = getWeekStart(today);
   const raid = gerarRaidDaSemana(weekStart, { userId: ctx.userId, outroId: ctx.outroId }, { temParceiro: ctx.temParceiro });
@@ -337,6 +391,7 @@ export interface UseRPGParams {
   treino: TreinoDia[] | null;
   weightLogs: WeightLogLike[];
   bodyCompHistorico: MedicaoEntry[];
+  atividades: AtividadeExtra[];
 }
 
 export interface ToastEntry {
@@ -356,7 +411,7 @@ export interface RaidParceiroView {
 }
 
 export function useRPG(params: UseRPGParams) {
-  const { ready, userId, outroId, user, temParceiro, checks, mealLog, waters, treino, weightLogs, bodyCompHistorico } = params;
+  const { ready, userId, outroId, user, temParceiro, checks, mealLog, waters, treino, weightLogs, bodyCompHistorico, atividades } = params;
 
   const [loaded, setLoaded] = useState(false);
   const [rpgData, setRpgData] = useState<RPGData | null>(null);
@@ -406,6 +461,7 @@ export function useRPG(params: UseRPGParams) {
       bodyCompHistorico,
       altura,
       partnerMissoesCumpridas: partnerData?.missoesCumpridas || null,
+      atividadesExtras: atividades,
     };
 
     const next = stepRPG(rpgData, ctx);
@@ -421,7 +477,7 @@ export function useRPG(params: UseRPGParams) {
     setRpgData(next);
     kvSet(`${userId}_rpg`, next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, rpgData, partnerData, userId, outroId, temParceiro, checks, mealLog, waters, treino, weightLogs, user, bodyCompHistorico]);
+  }, [loaded, rpgData, partnerData, userId, outroId, temParceiro, checks, mealLog, waters, treino, weightLogs, user, bodyCompHistorico, atividades]);
 
   const dismissToast = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
 
@@ -461,8 +517,9 @@ export function useRPG(params: UseRPGParams) {
       today, checks, waters, mealLog, treino, weightLogs,
       kcalMeta: user.kcalMeta, waterMeta: user.waterMeta, proteinaMeta: user.proteinaMeta,
       tmb, ofensiva, bodyCompHistorico, sexo: user.sexo, altura: num(user.altura),
+      atividadesExtras: atividades,
     });
-  }, [user, today, checks, waters, mealLog, treino, weightLogs, tmb, ofensiva, bodyCompHistorico]);
+  }, [user, today, checks, waters, mealLog, treino, weightLogs, tmb, ofensiva, bodyCompHistorico, atividades]);
 
   const rank = rpgData?.rankAtual || "E";
   const rankElegivel = rankPorNivel(nivelInfo.nivel);
@@ -501,13 +558,17 @@ export function useRPG(params: UseRPGParams) {
   }, [temParceiro, partnerData, today]);
 
   // Regra de seguranca #1, visivel no card compacto da Home no mesmo dia.
+  // Usa a meta efetiva (ajustada pelo gasto extra do dia) — mesmo piso que
+  // derivarCumprimento aplica pra dar XP de nutricao.
   const nutricaoAbaixoDoMinimo = useMemo(() => {
     if (!user) return false;
     const totais = totaisDoDia(mealLog, today);
     if (totais.kcal <= 0) return false;
-    const piso = Math.max(tmb || 0, user.kcalMeta * 0.9);
+    const gastoExtraHoje = gastoExtraDoDia(atividades, today);
+    const kcalMetaEfetiva = kcalMetaEfetivaDoDia(user.kcalMeta, gastoExtraHoje, tmb);
+    const piso = Math.max(tmb || 0, kcalMetaEfetiva * 0.9);
     return totais.kcal < piso;
-  }, [user, mealLog, today, tmb]);
+  }, [user, mealLog, today, tmb, atividades]);
 
   return {
     ready: loaded,

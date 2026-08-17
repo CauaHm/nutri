@@ -3,7 +3,7 @@ import { getSessionUser } from "../_lib/authSession";
 import { updateUser, publicUser } from "../_lib/repo";
 import type { User } from "../_lib/repo";
 
-const EDITAVEIS: (keyof User)[] = ["nome", "emoji", "cor", "sexo", "altura", "idade", "kcalMeta", "waterMeta", "proteinaMeta"];
+const EDITAVEIS: (keyof User)[] = ["nome", "emoji", "cor", "sexo", "altura", "idade", "kcalMeta", "waterMeta", "proteinaMeta", "minutosAtivosMeta"];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {

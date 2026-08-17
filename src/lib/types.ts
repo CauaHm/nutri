@@ -15,6 +15,7 @@ export interface User {
   kcalMeta: number;
   waterMeta: number;
   proteinaMeta: number;
+  minutosAtivosMeta: number;
   competitionId: string | null;
   createdAt: string;
 }

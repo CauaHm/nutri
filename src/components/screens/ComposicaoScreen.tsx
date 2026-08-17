@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
-import { useBodyComp } from "@/lib/useBodyComp";
+import { useBodyComp, NAF_TRAVADO_MODO_PRECISO, type ModoGasto } from "@/lib/useBodyComp";
 import { todayStr, getWeekStart } from "@/lib/dates";
 import { MEDIDAS_LABEL } from "@/lib/defaults";
+import { MINUTOS_ATIVOS_META_PADRAO } from "@/lib/atividades";
 import {
   calcGorduraNavy, calcMassas, calcMacros, calcMetaAutomatica,
   gerarPlanoRefeicoes, NAF_OPTIONS, OBJETIVOS, DEFICIT_MIN_RECOMENDADO, DEFICIT_MAX_RECOMENDADO,
@@ -43,6 +44,7 @@ interface ObjTemp {
   prazoSemanas: string | number;
   proteinaGkg: string | number;
   gorduraGkg: string | number;
+  minutosAtivosMeta: string | number;
 }
 
 export default function ComposicaoScreen({ data, nav, auth }: ScreenProps) {
@@ -56,9 +58,13 @@ export default function ComposicaoScreen({ data, nav, auth }: ScreenProps) {
 
   useEffect(() => {
     if (bc.ready && !objTemp) {
-      setObjTemp({ naf: bc.config.naf, objetivo: bc.config.objetivo, pesoMeta: bc.config.pesoMeta, prazoSemanas: bc.config.prazoSemanas, proteinaGkg: bc.config.proteinaGkg, gorduraGkg: bc.config.gorduraGkg });
+      setObjTemp({
+        naf: bc.config.naf, objetivo: bc.config.objetivo, pesoMeta: bc.config.pesoMeta, prazoSemanas: bc.config.prazoSemanas,
+        proteinaGkg: bc.config.proteinaGkg, gorduraGkg: bc.config.gorduraGkg,
+        minutosAtivosMeta: user.minutosAtivosMeta || MINUTOS_ATIVOS_META_PADRAO,
+      });
     }
-  }, [bc.ready, bc.config, objTemp]);
+  }, [bc.ready, bc.config, objTemp, user.minutosAtivosMeta]);
 
   if (!bc.ready || !objTemp) {
     return (
@@ -85,9 +91,12 @@ export default function ComposicaoScreen({ data, nav, auth }: ScreenProps) {
 
   const { massaGorda, massaMagra } = calcMassas(peso, pctGordura);
 
+  const modoGasto: ModoGasto = bc.config.modoGasto;
+  const nafEfetivo = modoGasto === "preciso" ? NAF_TRAVADO_MODO_PRECISO : objTemp.naf;
+
   const preview = peso ? calcMetaAutomatica({
     sexo, altura, idade, pesoAtual: peso,
-    naf: objTemp.naf, objetivo: objTemp.objetivo, pesoMeta: objTemp.pesoMeta, prazoSemanas: objTemp.prazoSemanas,
+    naf: nafEfetivo, objetivo: objTemp.objetivo, pesoMeta: objTemp.pesoMeta, prazoSemanas: objTemp.prazoSemanas,
     proteinaGkg: objTemp.proteinaGkg,
   }) : null;
 
@@ -117,9 +126,10 @@ export default function ComposicaoScreen({ data, nav, auth }: ScreenProps) {
   };
 
   const salvarObjetivo = async () => {
-    await bc.saveConfig({ ...bc.config, ...objTemp });
+    const { minutosAtivosMeta, ...objParaConfig } = objTemp;
+    await bc.saveConfig({ ...bc.config, ...objParaConfig, naf: nafEfetivo });
     if (preview) {
-      await auth.updateProfile({ kcalMeta: preview.caloriasDiarias, waterMeta: preview.waterMeta, proteinaMeta: preview.proteinaMeta });
+      await auth.updateProfile({ kcalMeta: preview.caloriasDiarias, waterMeta: preview.waterMeta, proteinaMeta: preview.proteinaMeta, minutosAtivosMeta: Number(minutosAtivosMeta) || MINUTOS_ATIVOS_META_PADRAO });
     }
     setObjSaved(true);
     setTimeout(() => setObjSaved(false), 1500);
@@ -268,8 +278,30 @@ export default function ComposicaoScreen({ data, nav, auth }: ScreenProps) {
               <div style={{ fontSize: 11.5, color: AMB, lineHeight: 1.6 }}>⚠️ Registre seu peso na medição acima primeiro — as metas diárias são calculadas a partir dele.</div>
             ) : (
               <>
-                <label style={sLbl}>Nível de atividade</label>
-                <select style={sInp} value={objTemp.naf} onChange={(e) => setObjTemp((p) => (p ? { ...p, naf: e.target.value } : p))}>
+                <label style={sLbl}>Modo de gasto — evita contar atividade 2x</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {([["estimativa", "Estimativa"], ["preciso", "Preciso"]] as const).map(([k, l]) => (
+                    <button
+                      key={k}
+                      onClick={async () => {
+                        if (k === modoGasto) return;
+                        if (!confirm("Trocar o modo de gasto muda como o TDEE e o piso de nutrição de \"O Sistema\" são calculados daqui pra frente. Seu histórico anterior foi calculado com o modelo antigo e não será recalculado. Trocar mesmo assim?")) return;
+                        await bc.saveConfig({ ...bc.config, modoGasto: k });
+                      }}
+                      style={{ flex: 1, padding: "8px 4px", background: modoGasto === k ? `${GRN}30` : "#ffffff08", border: `1px solid ${modoGasto === k ? GRN : BORDER}`, borderRadius: 8, color: modoGasto === k ? GRN : SUB, fontSize: 10.5, cursor: "pointer", fontWeight: modoGasto === k ? 700 : 400 }}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10, color: SUB, marginTop: 4, lineHeight: 1.5 }}>
+                  {modoGasto === "preciso"
+                    ? "Preciso: nível de atividade travado em Sedentário — TODA atividade (inclusive o treino programado) precisa ser registrada em Atividade Extra pra contar no gasto."
+                    : "Estimativa: o nível de atividade abaixo já embute sua rotina normal — em Atividade Extra registre só o que foi além do treino planejado."}
+                </div>
+
+                <label style={sLbl}>Nível de atividade{modoGasto === "preciso" ? " (travado no Modo Preciso)" : ""}</label>
+                <select style={{ ...sInp, opacity: modoGasto === "preciso" ? 0.5 : 1 }} value={nafEfetivo} disabled={modoGasto === "preciso"} onChange={(e) => setObjTemp((p) => (p ? { ...p, naf: e.target.value } : p))}>
                   {NAF_OPTIONS.map((n) => <option key={n.key} value={n.key}>{n.label} — {n.desc}</option>)}
                 </select>
 
@@ -291,6 +323,9 @@ export default function ComposicaoScreen({ data, nav, auth }: ScreenProps) {
                   <div><label style={sLbl}>Proteína (g/kg)</label><input style={sInp} type="number" step="0.1" value={objTemp.proteinaGkg} onChange={(e) => setObjTemp((p) => (p ? { ...p, proteinaGkg: e.target.value } : p))} /></div>
                   <div><label style={sLbl}>Gordura (g/kg)</label><input style={sInp} type="number" step="0.1" value={objTemp.gorduraGkg} onChange={(e) => setObjTemp((p) => (p ? { ...p, gorduraGkg: e.target.value } : p))} /></div>
                 </div>
+
+                <label style={sLbl}>Minutos ativos/dia (meta) — 0 desativa a métrica na Home</label>
+                <input style={{ ...sInp, maxWidth: 140 }} type="number" min="0" value={objTemp.minutosAtivosMeta} onChange={(e) => setObjTemp((p) => (p ? { ...p, minutosAtivosMeta: e.target.value } : p))} />
 
                 {preview && (
                   <>

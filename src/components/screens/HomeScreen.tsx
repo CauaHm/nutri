@@ -8,20 +8,35 @@ import { CARD2, PINK, CYAN, GRN, AMB, RED, PURP, SUB, BORDER, TEXT, sCard, sBtn,
 import RingProgress from "@/components/RingProgress";
 import GoalBar from "@/components/GoalBar";
 import StatusWindow from "@/components/StatusWindow";
+import { useBodyComp } from "@/lib/useBodyComp";
+import { calcTMB } from "@/lib/bodycomp";
+import { gastoExtraDoDia, minutosExtraDoDia, calcSugestaoReposicao, MINUTOS_ATIVOS_META_PADRAO } from "@/lib/atividades";
 import type { ScreenProps } from "@/lib/screenProps";
+
+const num = (v: any): number | null => (v === "" || v === null || v === undefined ? null : Number(v));
 
 export default function HomeScreen({ data, nav }: ScreenProps) {
   const {
     userId, user, outroUser, waters, saveWater, addWaterQuick, checks, saveCheck,
     treino, refeicoesCfg, mealLog, myStats, outroStats, config, recados, sendRecado, todayTotais,
-    temParceiro, invitesRecebidos,
+    temParceiro, invitesRecebidos, atividades,
   } = data;
   const [msg, setMsg] = useState("");
+  const [metaAplicadaHoje, setMetaAplicadaHoje] = useState(false);
+  const bc = useBodyComp(user);
 
   const today = todayStr();
   const kcalTotal = Math.round(todayTotais.kcal);
   const proteinaTotal = Math.round(todayTotais.proteina);
-  const kcalRestante = Math.max(0, user.kcalMeta - kcalTotal);
+
+  const tmb = bc.ready ? calcTMB({ sexo: user.sexo, peso: num(bc.historico[0]?.peso), altura: num(user.altura), idade: num(user.idade) }) : null;
+  const gastoExtraHoje = gastoExtraDoDia(atividades, today);
+  const minutosExtraHoje = minutosExtraDoDia(atividades, today);
+  const minutosMeta = user.minutosAtivosMeta || MINUTOS_ATIVOS_META_PADRAO;
+  const sugestaoReposicao = calcSugestaoReposicao(user.kcalMeta, gastoExtraHoje, tmb);
+  const kcalMetaEfetiva = metaAplicadaHoje && sugestaoReposicao ? sugestaoReposicao.metaAjustada : user.kcalMeta;
+
+  const kcalRestante = Math.max(0, kcalMetaEfetiva - kcalTotal);
   const proteinaRestante = Math.max(0, user.proteinaMeta - proteinaTotal);
   const waterEntry = waters.find((l) => l.date === today);
   const waterHoje = waterEntry?.liters || 0;
@@ -65,7 +80,7 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
       <div style={{ padding: "16px 16px 0" }}>
         {/* Anel de resumo do dia */}
         <div className="fade-in-up" style={{ ...sCard, padding: "18px 8px", marginBottom: 12, display: "flex", justifyContent: "space-around" }}>
-          <RingProgress pct={Math.min(100, (kcalTotal / user.kcalMeta) * 100)} size={64} stroke={6} color={PINK} Icon={IconFlame} value={`${kcalTotal}`} label="kcal" onClick={() => nav.goTo("nutricao", "refeicoes-hoje")} />
+          <RingProgress pct={Math.min(100, (kcalTotal / kcalMetaEfetiva) * 100)} size={64} stroke={6} color={PINK} Icon={IconFlame} value={`${kcalTotal}`} label="kcal" onClick={() => nav.goTo("nutricao", "refeicoes-hoje")} />
           <RingProgress pct={Math.min(100, (waterHoje / user.waterMeta) * 100)} size={64} stroke={6} color={CYAN} Icon={IconDroplet} value={`${waterHoje}L`} label="água" />
           <RingProgress pct={Math.min(100, (weeklyDone / weeklyTarget) * 100)} size={64} stroke={6} color={GRN} Icon={IconDumbbell} value={`${weeklyDone}/${weeklyTarget}`} label="treinos" />
           <RingProgress pct={(todayPts / 5) * 100} size={64} stroke={6} color={PURP} Icon={IconStar} value={`${todayPts}/5`} label="hoje" onClick={() => nav.push("ranking")} />
@@ -73,7 +88,7 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
 
         {/* Medidores de alimentacao — quanto ja comeu e quanto ainda pode comer hoje */}
         <div className="fade-in-up" style={{ ...sCard, padding: 16, marginBottom: 12, display: "flex", flexDirection: "column", gap: 14 }}>
-          <GoalBar label="Calorias" value={kcalTotal} meta={user.kcalMeta} unit=" kcal" color={PINK} direction="ceiling" Icon={IconFlame} />
+          <GoalBar label="Calorias" value={kcalTotal} meta={kcalMetaEfetiva} unit=" kcal" color={PINK} direction="ceiling" Icon={IconFlame} />
           <GoalBar label="Proteína" value={proteinaTotal} meta={user.proteinaMeta} unit="g" color={AMB} direction="floor" Icon={IconZap} />
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1, textAlign: "center" }}>
@@ -86,6 +101,50 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
               <div style={{ fontSize: 15, fontWeight: 800, color: proteinaRestante > 0 ? TEXT : GRN }}>{proteinaRestante > 0 ? `${proteinaRestante}g` : "meta batida"}</div>
             </div>
           </div>
+        </div>
+
+        {/* Atividade extra — minutos hoje + gasto extra + status do treino programado */}
+        <div className="fade-in-up" style={{ ...sCard, padding: 16, marginBottom: 12 }}>
+          <button onClick={() => nav.push("atividade")} className="tapable" style={{ display: "flex", width: "100%", alignItems: "center", gap: 14, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
+            {minutosMeta > 0 && (
+              <RingProgress pct={Math.min(100, (minutosExtraHoje / minutosMeta) * 100)} size={56} stroke={5} color={GRN} Icon={IconDumbbell} value={`${minutosExtraHoje}`} label="min" />
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: TEXT, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 15 }}>🏃</span> Atividade Extra
+              </div>
+              <div style={{ fontSize: 11, color: SUB, marginTop: 2 }}>
+                {gastoExtraHoje > 0 ? `🔥 gasto extra: ${gastoExtraHoje} kcal` : "Nenhuma atividade extra registrada hoje ainda."}
+              </div>
+              {treinoHoje && (
+                <div style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 20, fontSize: 9.5, fontWeight: 700, background: checkEntry?.status === "completo" ? `${GRN}20` : checkEntry?.status === "parcial" ? `${AMB}20` : "#ffffff10", color: checkEntry?.status === "completo" ? GRN : checkEntry?.status === "parcial" ? AMB : SUB }}>
+                  treino de hoje: {checkEntry?.status === "completo" ? "completo" : checkEntry?.status === "parcial" ? "parcial" : "pendente"}
+                </div>
+              )}
+            </div>
+            <IconChevronRight size={16} style={{ color: SUB, flexShrink: 0 }} />
+          </button>
+
+          {sugestaoReposicao && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
+              <div style={{ fontSize: 11.5, color: TEXT, lineHeight: 1.6 }}>
+                Gasto extra hoje: <b style={{ color: PINK }}>{sugestaoReposicao.gastoExtra} kcal</b><br />
+                Sugerido comer: <b style={{ color: AMB }}>+{sugestaoReposicao.reposicao} kcal</b> <span style={{ color: SUB }}>(meta ajustada: {sugestaoReposicao.metaAjustada} kcal)</span>
+              </div>
+              {sugestaoReposicao.pisoAtingido && (
+                <div style={{ marginTop: 6, fontSize: 10.5, color: AMB }}>⚠️ Seu gasto hoje foi alto — comer abaixo disso compromete recuperação e massa magra.</div>
+              )}
+              {!metaAplicadaHoje ? (
+                <button onClick={() => setMetaAplicadaHoje(true)} className="tapable" style={{ ...sBtn(AMB, true), marginTop: 8 }}>Aplicar hoje</button>
+              ) : (
+                <div style={{ marginTop: 8, fontSize: 10.5, color: GRN, textAlign: "center" }}>✓ Aplicado só pra hoje — sua meta base não muda.</div>
+              )}
+            </div>
+          )}
+
+          <button onClick={() => nav.push("balanco")} className="tapable" style={{ marginTop: 10, width: "100%", background: "none", border: "none", color: PURP, fontSize: 10.5, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+            Ver balanço energético completo →
+          </button>
         </div>
 
         {/* O Sistema — camada de progressao RPG (aditiva, ve os mesmos dados) */}

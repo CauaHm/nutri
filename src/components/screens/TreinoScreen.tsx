@@ -95,9 +95,15 @@ export default function TreinoScreen({ data, nav }: ScreenProps) {
       />
 
       <div style={{ padding: 14 }}>
-        <button onClick={() => nav.push("treino-cargas")} className="tapable" style={{ ...sCard, display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 14px", marginBottom: 14, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
+        <button onClick={() => nav.push("treino-cargas")} className="tapable" style={{ ...sCard, display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 14px", marginBottom: 10, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
           <IconActivity size={18} style={{ color: user.cor }} />
           <span style={{ flex: 1, textAlign: "left", fontWeight: 700, fontSize: 13, color: TEXT }}>Cargas & Recordes</span>
+          <IconChevronRight size={16} style={{ color: SUB }} />
+        </button>
+
+        <button onClick={() => nav.push("atividade")} className="tapable" style={{ ...sCard, display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 14px", marginBottom: 14, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
+          <span style={{ fontSize: 18 }}>🏃</span>
+          <span style={{ flex: 1, textAlign: "left", fontWeight: 700, fontSize: 13, color: TEXT }}>Atividade Extra</span>
           <IconChevronRight size={16} style={{ color: SUB }} />
         </button>
 

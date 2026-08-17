@@ -11,6 +11,7 @@
 import { parseDate, formatDate, daysBetween } from "./dates";
 import { totaisDoDia, type CheckEntry, type WaterEntry, type MealLog } from "./points";
 import { calcGorduraNavy, type MedicaoEntry, type Sexo } from "./bodycomp";
+import { minutosExtraNaJanela, type AtividadeExtra } from "./atividades";
 import type { TreinoDia } from "./defaults";
 import { SUB, GRN, CYAN, PURP, AMB } from "./theme";
 import type { DiaMissoes, MissaoInstance } from "./missoes";
@@ -205,6 +206,7 @@ export interface CalcAtributosInput {
   bodyCompHistorico: MedicaoEntry[];
   sexo: Sexo;
   altura: number | null;
+  atividadesExtras: AtividadeExtra[];
 }
 
 // Caps de saturacao (30 dias de janela) — ponto de partida, ajustavel:
@@ -214,8 +216,14 @@ const CAP_DIS = 45;
 const CAP_NUT = 60;
 const CAP_VIT = 60;
 
+// Minutos de atividade extra viram "sessoes equivalentes" (1 unidade a cada
+// 15min) antes de somar no RES — sem isso, minutos brutos (facilmente
+// 300-500+ em 30 dias) saturariam o atributo sozinhos, fora de proporcao
+// com os outros inputs (que sao contagem de dias, 0-30). Divisor ajustavel.
+const MIN_POR_UNIDADE_RES = 15;
+
 export function calcAtributos(input: CalcAtributosInput): Atributos {
-  const { today, checks, waters, mealLog, treino, weightLogs, kcalMeta, waterMeta, proteinaMeta, tmb, ofensiva, bodyCompHistorico, sexo, altura } = input;
+  const { today, checks, waters, mealLog, treino, weightLogs, kcalMeta, waterMeta, proteinaMeta, tmb, ofensiva, bodyCompHistorico, sexo, altura, atividadesExtras } = input;
 
   // janela dos ultimos 30 dias corridos, incluindo hoje
   const janela: string[] = [];
@@ -282,8 +290,10 @@ export function calcAtributos(input: CalcAtributosInput): Atributos {
   // tendencia de %gordura (VIT) — nunca subtrai
   const bonusTendenciaGordura = calcBonusTendenciaGordura(bodyCompHistorico, sexo, altura, today);
 
+  const minutosExtra30d = minutosExtraNaJanela(atividadesExtras, janela);
+
   const forRaw = prsRecentes * 2 + trainingDays30d;
-  const resRaw = completoDays30d + scheduledCardioDaysHit30d;
+  const resRaw = completoDays30d + scheduledCardioDaysHit30d + Math.floor(minutosExtra30d / MIN_POR_UNIDADE_RES);
   const disRaw = ofensiva + diasComRegistro30d;
   const nutRaw = diasKcalNaFaixa30d + diasProteinaAlvo30d;
   const vitRaw = diasAguaAlvo30d * 2 + bonusTendenciaGordura;

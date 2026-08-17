@@ -15,6 +15,7 @@ export interface User {
   kcalMeta: number;
   waterMeta: number;
   proteinaMeta: number;
+  minutosAtivosMeta: number;
   competitionId: string | null;
   createdAt: string;
 }
@@ -76,6 +77,7 @@ export async function createUser({ email, senha, nome }: { email: string; senha:
     kcalMeta: 2000,
     waterMeta: 3,
     proteinaMeta: 130,
+    minutosAtivosMeta: 45,
     competitionId: null,
     createdAt: new Date().toISOString(),
   };

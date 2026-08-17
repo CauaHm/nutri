@@ -3,6 +3,7 @@ import { kvGet, kvSet, kvGetMany } from "./clientStorage";
 import { todayStr } from "./dates";
 import { calcPontos, itensDaRefeicao, totaisDoDia, type MealLog, type WaterEntry, type CheckEntry } from "./points";
 import { defaultRefeicoes, defaultCompras, defaultReceitas, defaultTreinoGenerico, type RefeicaoConfig, type CompraItem, type Receita, type TreinoDia } from "./defaults";
+import type { AtividadeExtra } from "./atividades";
 import { useBodyComp } from "./useBodyComp";
 import { useRPG } from "./useRPG";
 import type { User } from "./types";
@@ -46,6 +47,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
   const [checks, setChecksState] = useState<CheckEntry[]>([]);
   const [weightLogs, setWeightLogsState] = useState<WeightLog[]>([]);
   const [liveSession, setLiveSessionState] = useState<LiveWorkoutSession | null>(null);
+  const [atividades, setAtividadesState] = useState<AtividadeExtra[]>([]);
 
   const [outroMealLog, setOutroMealLog] = useState<MealLog>({});
   const [outroWaters, setOutroWaters] = useState<WaterEntry[]>([]);
@@ -69,7 +71,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     (async () => {
       const keys = [
         `${userId}_treino`, `${userId}_refeicoes_cfg`, `${userId}_refeicoes_log`,
-        `${userId}_water`, `${userId}_check`, `${userId}_wlogs`, `${userId}_treino_sessao`,
+        `${userId}_water`, `${userId}_check`, `${userId}_wlogs`, `${userId}_treino_sessao`, `${userId}_atividades`,
         `${sharedPrefix}_compras`, `${sharedPrefix}_receitas`, `${sharedPrefix}_recados`,
       ];
       if (outroId) keys.push(`${outroId}_refeicoes_log`, `${outroId}_water`, `${outroId}_check`);
@@ -81,6 +83,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
       setChecksState(v[`${userId}_check`] || []);
       setWeightLogsState(v[`${userId}_wlogs`] || []);
       setLiveSessionState(v[`${userId}_treino_sessao`] || null);
+      setAtividadesState(v[`${userId}_atividades`] || []);
       setComprasState(v[`${sharedPrefix}_compras`] || defaultCompras());
       setReceitasState(v[`${sharedPrefix}_receitas`] || defaultReceitas());
       setRecadosState(v[`${sharedPrefix}_recados`] || []);
@@ -193,6 +196,20 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     await kvSet(`${userId}_wlogs`, next);
   }, [weightLogs, userId]);
 
+  // ---- atividades extras (corrida, bike, etc — fora do log de refeicoes) ----
+  const addAtividade = useCallback(async (entry: Omit<AtividadeExtra, "id">) => {
+    const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `at_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const next = [{ id, ...entry } as AtividadeExtra, ...atividades];
+    setAtividadesState(next);
+    await kvSet(`${userId}_atividades`, next);
+  }, [atividades, userId]);
+
+  const removeAtividade = useCallback(async (id: string) => {
+    const next = atividades.filter((a) => a.id !== id);
+    setAtividadesState(next);
+    await kvSet(`${userId}_atividades`, next);
+  }, [atividades, userId]);
+
   // ---- sessao de treino ao vivo (retomavel — 1 de cada vez) ----
   const saveLiveSession = useCallback(async (next: LiveWorkoutSession | null) => {
     setLiveSessionState(next);
@@ -240,6 +257,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     treino,
     weightLogs,
     bodyCompHistorico: bodyComp.historico,
+    atividades,
   });
 
   return {
@@ -252,6 +270,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     checks, saveCheck, delCheck, outroChecks,
     roundStart, historico, novaRodada, showPrize, winner,
     weightLogs, saveWeightLog, delWeightLog,
+    atividades, addAtividade, removeAtividade,
     liveSession, saveLiveSession,
     compras, saveCompras, receitas, saveReceitas,
     recados, sendRecado,

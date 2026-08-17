@@ -4,6 +4,15 @@ import { defaultMedidasMetas, type MedidasMap } from "./defaults";
 import type { MedicaoEntry, Sexo } from "./bodycomp";
 import type { User } from "./types";
 
+// Modo de gasto — resolve a armadilha de contagem dupla entre o fator NAF
+// (que ja embute a rotina planejada) e as atividades extras registradas:
+//  - "estimativa" (padrao, retrocompativel): NAF continua valendo, atividade
+//    extra so registra o que foi ALEM do treino planejado.
+//  - "preciso": NAF trava em sedentario (1.2) e TODA atividade — inclusive o
+//    treino programado — precisa ser registrada como atividade extra.
+export type ModoGasto = "estimativa" | "preciso";
+export const NAF_TRAVADO_MODO_PRECISO = "sedentario";
+
 export interface BodyCompConfig {
   naf: string;
   proteinaGkg: number | string;
@@ -12,12 +21,14 @@ export interface BodyCompConfig {
   pesoMeta: string | number;
   prazoSemanas: string | number;
   metasMedidas: MedidasMap;
+  modoGasto: ModoGasto;
 }
 
 const DEFAULT_CONFIG: BodyCompConfig = {
   naf: "leve", proteinaGkg: 2.1, gorduraGkg: 0.7,
   objetivo: "manter", pesoMeta: "", prazoSemanas: "12",
   metasMedidas: defaultMedidasMetas(),
+  modoGasto: "estimativa",
 };
 
 export type PlanoLog = Record<string, Record<string, number>>;
