@@ -80,7 +80,7 @@ export default function RankingTab({ data }: TabProps) {
   return (
     <>
       <div style={{ fontSize: 11, color: SUB, marginBottom: 14, lineHeight: 1.6 }}>
-        🎯 Meta: <span style={{ color: PINK, fontWeight: 700 }}>{config.metaPontos} pts</span> para ganhar · kcal✅=1pt · água✅=1pt · treino completo=3pts · parcial=1pt
+        🎯 Meta: <span style={{ color: PINK, fontWeight: 700 }}>{config.metaPontos} pts</span> para ganhar · kcal na meta + proteína batida=1pt · água✅=1pt · treino completo=3pts · parcial=1pt
       </div>
 
       {rows.map(({ uid, stats, u }) => {
@@ -109,7 +109,7 @@ export default function RankingTab({ data }: TabProps) {
               <div style={{ width: `${Math.min((stats.pts / config.metaPontos) * 100, 100)}%`, height: "100%", background: `linear-gradient(90deg,${u.cor},${PURP})`, borderRadius: 8 }} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {([["🔥 Kcal", stats.calDays], ["💧 Água", stats.waterDays], ["🏋️ Treino", stats.checkDays]] as const).map(([l, d]) => (
+              {([["🔥 Kcal+Prot", stats.calDays], ["💧 Água", stats.waterDays], ["🏋️ Treino", stats.checkDays]] as const).map(([l, d]) => (
                 <div key={l} style={{ background: CARD2, borderRadius: 8, padding: "8px", textAlign: "center" }}>
                   <div style={{ fontSize: 11, color: SUB }}>{l}</div>
                   <div style={{ fontWeight: 800, fontSize: 16, color: u.cor }}>{stats.totalDias > 0 ? Math.round((d / stats.totalDias) * 100) : 0}%</div>

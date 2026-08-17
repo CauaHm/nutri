@@ -2,10 +2,11 @@ import { useState } from "react";
 import { todayStr, weekdayPT, getWeekStart } from "@/lib/dates";
 import {
   IconMenu, IconBell, IconChevronRight, IconDroplet, IconFlame, IconDumbbell,
-  IconStar, IconTrophy, IconSend, IconPlus, IconMinus, IconCheck,
+  IconStar, IconTrophy, IconSend, IconPlus, IconMinus, IconCheck, IconZap,
 } from "@/components/icons";
 import { CARD2, PINK, CYAN, GRN, AMB, RED, PURP, SUB, BORDER, TEXT, sCard, sBtn, sInp } from "@/lib/theme";
 import RingProgress from "@/components/RingProgress";
+import GoalBar from "@/components/GoalBar";
 import StatusWindow from "@/components/StatusWindow";
 import type { ScreenProps } from "@/lib/screenProps";
 
@@ -19,6 +20,9 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
 
   const today = todayStr();
   const kcalTotal = Math.round(todayTotais.kcal);
+  const proteinaTotal = Math.round(todayTotais.proteina);
+  const kcalRestante = Math.max(0, user.kcalMeta - kcalTotal);
+  const proteinaRestante = Math.max(0, user.proteinaMeta - proteinaTotal);
   const waterEntry = waters.find((l) => l.date === today);
   const waterHoje = waterEntry?.liters || 0;
   const checkEntry = checks.find((l) => l.date === today);
@@ -32,8 +36,9 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
   const weeklyTarget = (treino || []).length || 1;
   const weeklyDone = checks.filter((c) => c.status === "completo" && getWeekStart(c.date) === weekStart).length;
 
+  const bateuProteinaHoje = user.proteinaMeta > 0 ? proteinaTotal >= user.proteinaMeta : true;
   const todayPts =
-    (kcalTotal > 0 && kcalTotal <= user.kcalMeta ? 1 : 0) +
+    (kcalTotal > 0 && kcalTotal <= user.kcalMeta && bateuProteinaHoje ? 1 : 0) +
     (waterHoje >= user.waterMeta ? 1 : 0) +
     (checkEntry?.status === "completo" ? 3 : checkEntry?.status === "parcial" ? 1 : 0);
 
@@ -64,6 +69,23 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
           <RingProgress pct={Math.min(100, (waterHoje / user.waterMeta) * 100)} size={64} stroke={6} color={CYAN} Icon={IconDroplet} value={`${waterHoje}L`} label="água" />
           <RingProgress pct={Math.min(100, (weeklyDone / weeklyTarget) * 100)} size={64} stroke={6} color={GRN} Icon={IconDumbbell} value={`${weeklyDone}/${weeklyTarget}`} label="treinos" />
           <RingProgress pct={(todayPts / 5) * 100} size={64} stroke={6} color={PURP} Icon={IconStar} value={`${todayPts}/5`} label="hoje" onClick={() => nav.push("ranking")} />
+        </div>
+
+        {/* Medidores de alimentacao — quanto ja comeu e quanto ainda pode comer hoje */}
+        <div className="fade-in-up" style={{ ...sCard, padding: 16, marginBottom: 12, display: "flex", flexDirection: "column", gap: 14 }}>
+          <GoalBar label="Calorias" value={kcalTotal} meta={user.kcalMeta} unit=" kcal" color={PINK} direction="ceiling" Icon={IconFlame} />
+          <GoalBar label="Proteína" value={proteinaTotal} meta={user.proteinaMeta} unit="g" color={AMB} direction="floor" Icon={IconZap} />
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 9.5, color: SUB }}>ainda pode comer</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: kcalRestante > 0 ? TEXT : GRN }}>{kcalRestante > 0 ? `${kcalRestante} kcal` : "meta batida"}</div>
+            </div>
+            <div style={{ width: 1, background: BORDER }} />
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 9.5, color: SUB }}>proteína faltando</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: proteinaRestante > 0 ? TEXT : GRN }}>{proteinaRestante > 0 ? `${proteinaRestante}g` : "meta batida"}</div>
+            </div>
+          </div>
         </div>
 
         {/* O Sistema — camada de progressao RPG (aditiva, ve os mesmos dados) */}

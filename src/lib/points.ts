@@ -57,10 +57,10 @@ export interface PontosStats {
   kcalPorDia: Record<string, number>;
 }
 
-// Regras do jogo: kcal do dia dentro da meta = 1pt, agua na meta = 1pt,
-// treino completo = 3pts, parcial = 1pt.
+// Regras do jogo: kcal do dia dentro da meta E proteina do dia na meta = 1pt,
+// agua na meta = 1pt, treino completo = 3pts, parcial = 1pt.
 export function calcPontos(
-  user: Pick<User, "kcalMeta" | "waterMeta">,
+  user: Pick<User, "kcalMeta" | "waterMeta" | "proteinaMeta">,
   mealLogs: MealLog | undefined,
   waters: WaterEntry[],
   checks: CheckEntry[],
@@ -74,8 +74,11 @@ export function calcPontos(
     totalDias = 0;
 
   const kcalPorDia: Record<string, number> = {};
+  const proteinaPorDia: Record<string, number> = {};
   Object.keys(mealLogs || {}).forEach((date) => {
-    kcalPorDia[date] = totaisDoDia(mealLogs, date).kcal;
+    const t = totaisDoDia(mealLogs, date);
+    kcalPorDia[date] = t.kcal;
+    proteinaPorDia[date] = t.proteina;
   });
 
   const allDates = new Set([...Object.keys(kcalPorDia), ...waters.map((l) => l.date), ...checks.map((l) => l.date)]);
@@ -84,9 +87,11 @@ export function calcPontos(
     if (parseDate(date) < start) return;
     totalDias++;
     const kcal = kcalPorDia[date];
+    const proteina = proteinaPorDia[date] || 0;
     const water = waters.find((l) => l.date === date);
     const check = checks.find((l) => l.date === date);
-    if (kcal !== undefined && kcal > 0 && kcal <= user.kcalMeta) {
+    const bateuProteina = user.proteinaMeta > 0 ? proteina >= user.proteinaMeta : true;
+    if (kcal !== undefined && kcal > 0 && kcal <= user.kcalMeta && bateuProteina) {
       pts += 1;
       calDays++;
     }
