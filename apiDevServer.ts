@@ -42,10 +42,7 @@ const ROUTES: Array<{ re: RegExp; file: string; param?: string }> = [
   { re: /^\/api\/invites\/([^/]+)\/respond\/?$/, file: "/api/invites/[id]/respond.ts", param: "id" },
   { re: /^\/api\/kv\/many\/?$/, file: "/api/kv/many.ts" },
   { re: /^\/api\/kv\/([^/]+)\/?$/, file: "/api/kv/[key].ts", param: "key" },
-  { re: /^\/api\/push\/notify\/?$/, file: "/api/push/notify.ts" },
-  { re: /^\/api\/push\/prefs\/?$/, file: "/api/push/prefs.ts" },
-  { re: /^\/api\/push\/subscribe\/?$/, file: "/api/push/subscribe.ts" },
-  { re: /^\/api\/push\/unsubscribe\/?$/, file: "/api/push/unsubscribe.ts" },
+  { re: /^\/api\/push\/([^/]+)\/?$/, file: "/api/push/[action].ts", param: "action" },
 ];
 
 function matchRoute(pathname: string): { file: string; params: Record<string, string> } | null {
