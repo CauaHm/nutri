@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import ScreenHeader from "@/components/ScreenHeader";
 import { IconChevronRight, IconGrip, IconActivity } from "@/components/icons";
 import { SUB, BORDER, TEXT, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { DIAS_PT } from "@/lib/dates";
 import type { ScreenProps } from "@/lib/screenProps";
 import type { TreinoDia } from "@/lib/defaults";
 import type { User } from "@/lib/types";
@@ -120,7 +121,14 @@ export default function TreinoScreen({ data, nav }: ScreenProps) {
         {addForm ? (
           <div style={{ ...sCard, padding: 14, marginTop: 4 }}>
             <div style={{ fontWeight: 700, marginBottom: 4, color: TEXT }}>Novo dia de treino</div>
-            {([["dia", "Dia da semana (ex: Segunda)"], ["tag", "Tipo (ex: Pernas)"], ["emoji", "Emoji (ex: 🦵)"]] as const).map(([k, l]) => (
+            <div>
+              <label style={sLbl}>Dia da semana</label>
+              <select style={sInp} value={newDia.dia} onChange={(e) => setNewDia((p) => ({ ...p, dia: e.target.value }))}>
+                <option value="">Selecione...</option>
+                {DIAS_PT.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            {([["tag", "Tipo (ex: Pernas)"], ["emoji", "Emoji (ex: 🦵)"]] as const).map(([k, l]) => (
               <div key={k}><label style={sLbl}>{l}</label><input style={sInp} value={newDia[k] || ""} onChange={(e) => setNewDia((p) => ({ ...p, [k]: e.target.value }))} placeholder={l} /></div>
             ))}
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>

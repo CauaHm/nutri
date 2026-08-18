@@ -16,7 +16,7 @@ export function getWeekStart(s: string): string {
   return formatDate(d);
 }
 
-const DIAS_PT = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+export const DIAS_PT = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 export function weekdayPT(date: Date = new Date()): string {
   return DIAS_PT[date.getDay()];
 }

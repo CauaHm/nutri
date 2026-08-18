@@ -1,10 +1,17 @@
-import type { TreinoDia } from "./defaults";
+import type { TipoSerie, TreinoDia } from "./defaults";
 import type { WeightLog } from "./useAppData";
+import { getSeriesPlan } from "./seriesPlan";
 
 export interface LiveSetEntry {
   setIndex: number;
   done: boolean;
   weight?: string;
+  // Espelha o SerieConfig de origem (getSeriesPlan) — tudo opcional pra
+  // sessoes antigas/exercicios sem plano continuarem exatamente iguais.
+  tipo?: TipoSerie;
+  reps?: string;
+  rir?: number;
+  percentual?: number;
 }
 
 export interface LiveExerciseProgress {
@@ -48,18 +55,42 @@ export function buildInitialSession(dia: TreinoDia, dayIndex: number, weightLogs
     dayTag: dia.tag,
     startedAt: Date.now(),
     currentExerciseIndex: 0,
-    exercises: dia.exercicios.map((ex) => ({
-      exId: ex.id,
-      nome: ex.nome,
-      sets: Array.from({ length: parseSetsFromProto(ex.proto) }, (_, i) => ({
-        setIndex: i,
-        done: false,
-        // weightLogs vem mais-recente-primeiro (saveWeightLog sempre insere no
-        // topo), mesma logica ja usada em CargasScreen pra achar o ultimo registro.
-        weight: weightLogs.find((l) => l.ex === ex.nome)?.kg || "",
-      })),
-    })),
+    exercises: dia.exercicios.map((ex) => {
+      // weightLogs vem mais-recente-primeiro (saveWeightLog sempre insere no
+      // topo), mesma logica ja usada em CargasScreen pra achar o ultimo registro.
+      const referenceWeightStr = weightLogs.find((l) => l.ex === ex.nome)?.kg || "";
+      const referenceWeight = parseFloat(referenceWeightStr);
+      const hasReference = referenceWeightStr !== "" && !isNaN(referenceWeight);
+      return {
+        exId: ex.id,
+        nome: ex.nome,
+        sets: getSeriesPlan(ex).map((s, i) => ({
+          setIndex: i,
+          done: false,
+          // Aquecimento pre-calcula a partir do % do peso de referencia
+          // (arredondado pra 0.5kg); qualquer outro tipo mantem o
+          // pre-preenchimento de sempre (ultimo kg registrado).
+          weight:
+            s.tipo === "aquecimento"
+              ? hasReference && typeof s.percentual === "number"
+                ? String(Math.round(referenceWeight * (s.percentual / 100) * 2) / 2)
+                : ""
+              : referenceWeightStr,
+          tipo: s.tipo,
+          reps: s.reps,
+          rir: s.rir,
+          percentual: s.percentual,
+        })),
+      };
+    }),
   };
+}
+
+// Series de trabalho (exclui aquecimento) — fonte unica pro que conta como
+// "serie feita de verdade" pra fins de PR/historico (evita que um peso de
+// aquecimento digitado maior que o de trabalho vire PR por acidente).
+export function workingSets(sets: LiveSetEntry[]): LiveSetEntry[] {
+  return sets.filter((s) => s.tipo !== "aquecimento");
 }
 
 export function sessionCompletionRatio(session: LiveWorkoutSession): number {
@@ -80,7 +111,7 @@ export function computeSummary(session: LiveWorkoutSession, weightLogsBefore: We
   const exercisesCompleted = session.exercises.filter((e) => e.sets.length > 0 && e.sets.every((s) => s.done)).length;
   const prs: string[] = [];
   for (const ex of session.exercises) {
-    const doneWeights = ex.sets.filter((s) => s.done && s.weight).map((s) => parseFloat(s.weight!) || 0);
+    const doneWeights = workingSets(ex.sets).filter((s) => s.done && s.weight).map((s) => parseFloat(s.weight!) || 0);
     if (!doneWeights.length) continue;
     const sessionMax = Math.max(...doneWeights);
     const priorMax = Math.max(0, ...weightLogsBefore.filter((l) => l.ex === ex.nome).map((l) => parseFloat(l.kg) || 0));

@@ -1,16 +1,92 @@
 import { useState } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
-import { IconEdit, IconTrash, IconPlus } from "@/components/icons";
-import { PURP, PINK, GRN, RED, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { IconEdit, IconTrash, IconPlus, IconChevronUp, IconChevronDown } from "@/components/icons";
+import { PURP, PINK, GRN, RED, AMB, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
 import { getRestSeconds, inferDefaultRestSeconds } from "@/lib/restTimer";
+import { buildAutoSeriesPlan } from "@/lib/seriesPlan";
+import { DIAS_PT } from "@/lib/dates";
 import type { ScreenProps } from "@/lib/screenProps";
-import type { Exercicio } from "@/lib/defaults";
+import type { Exercicio, SerieConfig, TipoSerie } from "@/lib/defaults";
 
 interface DiaMetaTemp {
+  dia: string;
   tag: string;
   emoji: string;
   cardio: string;
   info: string;
+}
+
+// Editor de plano de series (aquecimento/normal/reserva/falha) — usado tanto
+// no formulario de editar exercicio quanto no de adicionar exercicio.
+// Colapsavel, mesmo padrao ja usado neste arquivo pra "Ver notas do
+// exercicio" (estado boolean + botao de texto). Aberto por padrao so se o
+// exercicio ja tiver series ao montar (a decisao e tomada uma vez, no mount
+// — cada exercicio editado gera uma instancia nova deste componente).
+function SeriesPlanner({ series, proto, onChange }: { series: SerieConfig[]; proto: string; onChange: (next: SerieConfig[]) => void }) {
+  const [aberto, setAberto] = useState(series.length > 0);
+  const [ultimaAteFalha, setUltimaAteFalha] = useState(false);
+
+  const updateRow = (i: number, patch: Partial<SerieConfig>) => onChange(series.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  const removeRow = (i: number) => onChange(series.filter((_, j) => j !== i));
+  const addRow = () => onChange([...series, { tipo: "normal" }]);
+  const moveRow = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= series.length) return;
+    const next = [...series];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+  };
+  const gerarAuto = () => {
+    onChange(buildAutoSeriesPlan({ nome: "", proto: proto || "", foco: "", nota: "" }, { lastSetToFailure: ultimaAteFalha }));
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button type="button" onClick={() => setAberto((v) => !v)} style={{ background: "none", border: "none", color: SUB, fontSize: 11.5, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+        {aberto ? "Ocultar planejamento de séries" : "Planejar séries"}
+      </button>
+      {aberto && (
+        <div style={{ marginTop: 8, padding: 10, background: "#ffffff08", borderRadius: 9, borderLeft: `2px solid ${PURP}` }}>
+          {series.length === 0 && <div style={{ fontSize: 11, color: SUB, marginBottom: 8 }}>Sem plano próprio — usa o protocolo padrão ({proto || "não definido"}) como séries normais.</div>}
+          {series.map((s, i) => (
+            <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 10, color: SUB, width: 14, flexShrink: 0, textAlign: "center" }}>{i + 1}</span>
+              <select style={{ ...sInp, flex: "1 1 96px", minHeight: 32, padding: "5px 8px", fontSize: 11.5 }} value={s.tipo} onChange={(e) => updateRow(i, { tipo: e.target.value as TipoSerie })}>
+                <option value="aquecimento">Aquecimento</option>
+                <option value="normal">Normal</option>
+                <option value="reserva">Reserva (RIR)</option>
+                <option value="falha">Até a falha</option>
+              </select>
+              <input style={{ ...sInp, flex: "1 1 64px", minHeight: 32, padding: "5px 8px", fontSize: 11.5 }} placeholder="reps" value={s.reps || ""} onChange={(e) => updateRow(i, { reps: e.target.value })} />
+              {s.tipo === "reserva" && (
+                <input type="number" style={{ ...sInp, width: 58, minHeight: 32, padding: "5px 8px", fontSize: 11.5 }} placeholder="RIR" value={s.rir ?? ""} onChange={(e) => updateRow(i, { rir: e.target.value ? Number(e.target.value) : undefined })} />
+              )}
+              {s.tipo === "aquecimento" && (
+                <input type="number" style={{ ...sInp, width: 58, minHeight: 32, padding: "5px 8px", fontSize: 11.5 }} placeholder="%" value={s.percentual ?? ""} onChange={(e) => updateRow(i, { percentual: e.target.value ? Number(e.target.value) : undefined })} />
+              )}
+              <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                <button type="button" onClick={() => moveRow(i, -1)} disabled={i === 0} className="tapable" style={{ background: "none", border: "none", color: i === 0 ? BORDER : SUB, cursor: i === 0 ? "default" : "pointer", padding: 2 }}><IconChevronUp size={14} /></button>
+                <button type="button" onClick={() => moveRow(i, 1)} disabled={i === series.length - 1} className="tapable" style={{ background: "none", border: "none", color: i === series.length - 1 ? BORDER : SUB, cursor: i === series.length - 1 ? "default" : "pointer", padding: 2 }}><IconChevronDown size={14} /></button>
+                <button type="button" onClick={() => removeRow(i)} className="tapable" style={{ background: "none", border: "none", color: SUB, cursor: "pointer", padding: 2 }}><IconTrash size={14} /></button>
+              </div>
+            </div>
+          ))}
+          <button type="button" onClick={addRow} className="tapable" style={{ width: "100%", padding: "8px 0", background: "#ffffff08", border: `1px dashed ${BORDER}`, borderRadius: 8, color: PURP, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 4 }}>
+            <IconPlus size={12} /> Adicionar série
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: SUB, cursor: "pointer" }}>
+              <input type="checkbox" checked={ultimaAteFalha} onChange={(e) => setUltimaAteFalha(e.target.checked)} />
+              última série até a falha
+            </label>
+          </div>
+          <button type="button" onClick={gerarAuto} className="tapable" style={{ width: "100%", marginTop: 8, padding: "9px 0", background: `${AMB}18`, border: `1px solid ${AMB}40`, borderRadius: 8, color: AMB, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+            ⚡ Gerar automaticamente
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps) {
@@ -68,7 +144,7 @@ export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps
   return (
     <div style={{ minHeight: "100%", paddingBottom: 60 }}>
       <ScreenHeader title={dia.dia} subtitle={dia.tag} accent={dia.emoji} onBack={nav.pop} right={
-        <button onClick={() => { setDiaMetaTemp({ tag: dia.tag, emoji: dia.emoji, cardio: dia.cardio || "", info: dia.info || "" }); setEditDiaMeta(true); }} className="tapable" style={{ background: "#ffffff10", border: "none", borderRadius: 9, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT, cursor: "pointer" }}>
+        <button onClick={() => { setDiaMetaTemp({ dia: dia.dia, tag: dia.tag, emoji: dia.emoji, cardio: dia.cardio || "", info: dia.info || "" }); setEditDiaMeta(true); }} className="tapable" style={{ background: "#ffffff10", border: "none", borderRadius: 9, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: TEXT, cursor: "pointer" }}>
           <IconEdit size={16} />
         </button>
       } />
@@ -77,7 +153,13 @@ export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps
         {editDiaMeta && diaMetaTemp && (
           <div style={{ ...sCard, padding: 14, marginBottom: 14 }}>
             <div style={{ fontWeight: 700, marginBottom: 4, color: TEXT }}>Editar dia</div>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.7fr", gap: 8 }}>
+              <div>
+                <label style={sLbl}>Dia</label>
+                <select style={sInp} value={diaMetaTemp.dia} onChange={(e) => setDiaMetaTemp((p) => (p ? { ...p, dia: e.target.value } : p))}>
+                  {DIAS_PT.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
               <div><label style={sLbl}>Tipo</label><input style={sInp} value={diaMetaTemp.tag} onChange={(e) => setDiaMetaTemp((p) => (p ? { ...p, tag: e.target.value } : p))} /></div>
               <div><label style={sLbl}>Emoji</label><input style={sInp} value={diaMetaTemp.emoji} onChange={(e) => setDiaMetaTemp((p) => (p ? { ...p, emoji: e.target.value } : p))} /></div>
             </div>
@@ -110,6 +192,7 @@ export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps
                     <label style={sLbl}>Descanso entre séries (segundos)</label>
                     <input style={sInp} type="number" value={editData.restSeconds ?? ""} placeholder={String(inferDefaultRestSeconds(editData, dia))} onChange={(e) => setEditData((p) => ({ ...p, restSeconds: e.target.value ? Number(e.target.value) : undefined }))} />
                   </div>
+                  <SeriesPlanner series={editData.series || []} proto={editData.proto || ""} onChange={(next) => setEditData((p) => ({ ...p, series: next }))} />
                   <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                     <button style={{ ...sBtn(GRN), flex: 1 }} onClick={confirmEdit}>Salvar</button>
                     <button style={{ ...sBtn("#444"), flex: 1 }} onClick={() => setEditEx(null)}>Cancelar</button>
@@ -143,6 +226,7 @@ export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps
                 <label style={sLbl}>Descanso entre séries (segundos)</label>
                 <input style={sInp} type="number" value={newEx.restSeconds ?? ""} placeholder={String(inferDefaultRestSeconds(newEx, dia))} onChange={(e) => setNewEx((p) => ({ ...p, restSeconds: e.target.value ? Number(e.target.value) : undefined }))} />
               </div>
+              <SeriesPlanner series={newEx.series || []} proto={newEx.proto || ""} onChange={(next) => setNewEx((p) => ({ ...p, series: next }))} />
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                 <button style={{ ...sBtn(user.cor), flex: 1 }} onClick={addEx}>+ Adicionar</button>
                 <button style={{ ...sBtn("#444"), flex: 1 }} onClick={() => setAddingEx(false)}>Cancelar</button>
