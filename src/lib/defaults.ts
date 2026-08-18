@@ -92,6 +92,18 @@ export function defaultReceitas(): Receita[] {
   ];
 }
 
+// Planejamento de series por exercicio: aquecimento (rampa de % antes das
+// series de trabalho), normal (legado, sem classificacao), reserva (RIR —
+// reps in reserve, series de trabalho "duras" mas nao ate a falha) ou falha
+// (ultima serie levada ate a falha muscular).
+export type TipoSerie = "aquecimento" | "normal" | "reserva" | "falha";
+export interface SerieConfig {
+  tipo: TipoSerie;
+  reps?: string; // texto livre, ex: "8-10"
+  rir?: number; // so relevante pra tipo "reserva", ex: 2
+  percentual?: number; // so relevante pra tipo "aquecimento", ex: 60 (% do peso de trabalho)
+}
+
 export interface Exercicio {
   id?: number;
   nome: string;
@@ -99,6 +111,10 @@ export interface Exercicio {
   foco: string;
   nota: string;
   restSeconds?: number;
+  // Sempre opcional, nunca migrado/preenchido retroativamente — ausente e um
+  // estado valido permanente (nao "ainda nao migrado"). Todo consumidor le
+  // atraves de getSeriesPlan() (seriesPlan.ts), nunca este campo direto.
+  series?: SerieConfig[];
 }
 
 export interface TreinoDia {

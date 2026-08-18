@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { todayStr, weekdayPT, getWeekStart } from "@/lib/dates";
 import {
   IconMenu, IconBell, IconChevronRight, IconDroplet, IconFlame, IconDumbbell,
-  IconStar, IconTrophy, IconSend, IconPlus, IconMinus, IconCheck, IconZap,
+  IconStar, IconTrophy, IconSend, IconPlus, IconMinus, IconCheck, IconZap, IconEdit,
 } from "@/components/icons";
 import { CARD2, PINK, CYAN, GRN, AMB, RED, PURP, SUB, BORDER, TEXT, sCard, sBtn, sInp } from "@/lib/theme";
 import RingProgress from "@/components/RingProgress";
@@ -24,6 +24,44 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
   const [msg, setMsg] = useState("");
   const [metaAplicadaHoje, setMetaAplicadaHoje] = useState(false);
   const bc = useBodyComp(user);
+
+  // Quantidade de agua "lembrada" pro botao de um toque — mesma convencao de
+  // storage de rm_last_uid (apiCacheGuard.ts) e rm_resttimer_${userId}
+  // (useRestTimer.ts): chave por usuario, leitura/escrita sempre
+  // try/catch-guardada (localStorage pode nao existir/estar bloqueado).
+  const [waterMl, setWaterMl] = useState(250);
+  const [editingWaterMl, setEditingWaterMl] = useState(false);
+  const [waterMlInput, setWaterMlInput] = useState("");
+
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      const raw = localStorage.getItem(`rm_water_ml_${userId}`);
+      const n = raw ? parseInt(raw, 10) : NaN;
+      if (Number.isFinite(n) && n > 0) setWaterMl(n);
+    } catch {
+      // sem localStorage: fica no padrao 250ml so pra essa sessao
+    }
+  }, [userId]);
+
+  const persistWaterMl = (ml: number) => {
+    setWaterMl(ml);
+    if (!userId) return;
+    try {
+      localStorage.setItem(`rm_water_ml_${userId}`, String(ml));
+    } catch {
+      // sem localStorage: quantidade lembrada nao sobrevive a um reload
+    }
+  };
+
+  const confirmWaterMlEdit = () => {
+    const n = parseInt(waterMlInput, 10);
+    if (Number.isFinite(n) && n > 0) {
+      persistWaterMl(n);
+      addWaterQuick(n / 1000);
+    }
+    setEditingWaterMl(false);
+  };
 
   const today = todayStr();
   const kcalTotal = Math.round(todayTotais.kcal);
@@ -203,7 +241,25 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
             <div style={{ fontSize: 20, fontWeight: 800, color: TEXT }}>{waterHoje}<span style={{ fontSize: 11, color: SUB, fontWeight: 400 }}> / {user.waterMeta}L</span></div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
               <button onClick={() => saveWater(today, Math.max(0, Math.round((waterHoje - 0.1) * 10) / 10))} className="tapable" style={{ width: 26, height: 26, borderRadius: "50%", background: "#ffffff10", border: "none", color: TEXT, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IconMinus size={12} /></button>
-              <button onClick={() => addWaterQuick(0.25)} className="tapable" style={{ flex: 1, background: `${CYAN}18`, border: `1px solid ${CYAN}40`, borderRadius: 8, color: CYAN, fontSize: 10.5, fontWeight: 700, padding: "6px 0", cursor: "pointer" }}>+250ml</button>
+              {editingWaterMl ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  autoFocus
+                  value={waterMlInput}
+                  onChange={(e) => setWaterMlInput(e.target.value)}
+                  onBlur={confirmWaterMlEdit}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  style={{ ...sInp, flex: 1, minHeight: 28, padding: "6px 8px", textAlign: "center", fontSize: 11 }}
+                />
+              ) : (
+                <div style={{ flex: 1, display: "flex", alignItems: "stretch", background: `${CYAN}18`, border: `1px solid ${CYAN}40`, borderRadius: 8, overflow: "hidden" }}>
+                  <button onClick={() => addWaterQuick(waterMl / 1000)} className="tapable" style={{ flex: 1, background: "none", border: "none", color: CYAN, fontSize: 10.5, fontWeight: 700, padding: "6px 0", cursor: "pointer" }}>+{waterMl}ml</button>
+                  <button onClick={() => { setWaterMlInput(String(waterMl)); setEditingWaterMl(true); }} className="tapable" aria-label="Editar quantidade de água" style={{ background: "none", border: "none", borderLeft: `1px solid ${CYAN}40`, color: CYAN, cursor: "pointer", padding: "0 6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <IconEdit size={11} />
+                  </button>
+                </div>
+              )}
               <button onClick={() => saveWater(today, Math.round((waterHoje + 0.1) * 10) / 10)} className="tapable" style={{ width: 26, height: 26, borderRadius: "50%", background: "#ffffff10", border: "none", color: TEXT, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IconPlus size={12} /></button>
             </div>
           </div>

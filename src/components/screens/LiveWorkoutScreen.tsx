@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { IconCheck, IconChevronLeft, IconChevronRight } from "@/components/icons";
-import { PINK, PURP, GRN, AMB, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { PINK, PURP, GRN, AMB, RED, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
 import { todayStr } from "@/lib/dates";
 import { getRestSeconds } from "@/lib/restTimer";
-import { buildInitialSession, computeSummary, parseRepsFromProto, type LiveWorkoutSession, type SessionSummary } from "@/lib/liveWorkout";
+import { buildInitialSession, computeSummary, parseRepsFromProto, workingSets, type LiveWorkoutSession, type SessionSummary } from "@/lib/liveWorkout";
 import type { ScreenProps } from "@/lib/screenProps";
 import type { WeightLog } from "@/lib/useAppData";
 
@@ -155,9 +155,10 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
     await saveCheck(todayStr(), resumo.status);
     if (resumo.status !== "none") data.rpg.registrarTreinoConcluido(resumo.status);
     for (const ex of session.exercises) {
-      const doneWeights = ex.sets.filter((s) => s.done && s.weight).map((s) => parseFloat(s.weight!) || 0);
+      const workingOnly = workingSets(ex.sets);
+      const doneWeights = workingOnly.filter((s) => s.done && s.weight).map((s) => parseFloat(s.weight!) || 0);
       if (!doneWeights.length) continue;
-      const doneCount = ex.sets.filter((s) => s.done).length;
+      const doneCount = workingOnly.filter((s) => s.done).length;
       const original = dia.exercicios.find((o) => (o.id !== undefined && o.id === ex.exId) || o.nome === ex.nome);
       await saveWeightLog({ ex: ex.nome, data: todayStr(), kg: String(Math.max(...doneWeights)), sets: String(doneCount), reps: parseRepsFromProto(original?.proto || "") });
     }
@@ -218,7 +219,14 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
               >
                 {s.done ? <IconCheck size={16} style={{ color: GRN }} /> : <span style={{ fontSize: 11, color: SUB, fontWeight: 700 }}>{i + 1}</span>}
               </button>
-              <div style={{ flex: 1, fontSize: 12, color: SUB }}>Série {i + 1}</div>
+              <div style={{ flex: 1, fontSize: 12, color: SUB }}>
+                Série {i + 1}
+                {s.tipo && s.tipo !== "normal" && (
+                  <div style={{ fontSize: 10, fontWeight: 700, marginTop: 2, color: s.tipo === "aquecimento" ? AMB : s.tipo === "reserva" ? PURP : RED }}>
+                    {s.tipo === "aquecimento" ? `Aquecimento${s.percentual != null ? ` · ~${s.percentual}%` : ""}` : s.tipo === "reserva" ? `Reserva${s.rir != null ? ` · RIR ${s.rir}` : ""}` : "Até a falha"}
+                  </div>
+                )}
+              </div>
               <input
                 type="number"
                 inputMode="decimal"
