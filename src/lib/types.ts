@@ -2,6 +2,7 @@
 // serverless em api/ (ver api/_lib/repo.ts para a fonte canônica do lado
 // servidor). Mantidos deliberadamente enxutos: o cliente só enxerga o que
 // publicUser()/as rotas devolvem como JSON, nunca o documento cru do banco.
+import type { NotificacoesConfig } from "./notificacoes";
 
 export interface User {
   _id: string;
@@ -18,6 +19,9 @@ export interface User {
   minutosAtivosMeta: number;
   competitionId: string | null;
   createdAt: string;
+  // Opcional — contas antigas nao tem. Sempre passe por mergeNotificacoes()
+  // (src/lib/notificacoes.ts) antes de ler.
+  notificacoes?: NotificacoesConfig;
 }
 
 export interface CompetitionHistoricoEntry {

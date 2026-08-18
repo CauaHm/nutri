@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { getDb, ObjectId } from "./db";
+import { NOTIFICACOES_PADRAO, type NotificacoesConfig } from "./notificacoes";
 
 export interface User {
   _id: string;
@@ -18,6 +19,9 @@ export interface User {
   minutosAtivosMeta: number;
   competitionId: string | null;
   createdAt: string;
+  // Opcional — contas criadas antes desse campo existir nao tem. Nunca leia
+  // isso cru; sempre passe por mergeNotificacoes() (api/_lib/notificacoes.ts).
+  notificacoes?: NotificacoesConfig;
 }
 
 export type PublicUser = Omit<User, "passwordHash">;
@@ -80,6 +84,7 @@ export async function createUser({ email, senha, nome }: { email: string; senha:
     minutosAtivosMeta: 45,
     competitionId: null,
     createdAt: new Date().toISOString(),
+    notificacoes: NOTIFICACOES_PADRAO,
   };
   await users.insertOne(doc);
   return { user: doc };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { User } from "./types";
-import { ensureCacheIsolation } from "./apiCacheGuard";
+import { ensureCacheIsolation, ensurePushIsolation } from "./apiCacheGuard";
 
 export interface AuthApi {
   user: User | null;
@@ -37,6 +37,7 @@ export function useAuth(): AuthApi {
   useEffect(() => {
     if (!ready) return;
     ensureCacheIsolation(user?._id ?? null);
+    ensurePushIsolation(user?._id ?? null);
   }, [ready, user?._id]);
 
   const call = async (url: string, body: any): Promise<{ ok: boolean; user?: User; error?: string }> => {

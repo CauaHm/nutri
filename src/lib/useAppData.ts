@@ -100,6 +100,12 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     if (pts >= metaPontos && !showPrize && comp.competition) {
       setWinner(userId);
       setShowPrize(true);
+      // Best-effort — fim de rodada e o unico tipo de push disparado direto
+      // de uma mutacao do cliente (os outros vem do cron). Nunca bloqueia
+      // nem precisa de retry: sendToUser do lado servidor ja aplica
+      // quiet-hours/teto diario/etc, e se isso falhar (offline, por
+      // exemplo) o app continua funcionando normalmente sem notificacao.
+      fetch("/api/push/notify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo: "fimDeRodada", winnerUserId: userId }) }).catch(() => {});
     }
   }, [metaPontos, showPrize, comp.competition, userId]);
 

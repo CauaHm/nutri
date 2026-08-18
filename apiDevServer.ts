@@ -36,11 +36,16 @@ const ROUTES: Array<{ re: RegExp; file: string; param?: string }> = [
   { re: /^\/api\/auth\/me\/?$/, file: "/api/auth/me.ts" },
   { re: /^\/api\/auth\/signup\/?$/, file: "/api/auth/signup.ts" },
   { re: /^\/api\/competition\/?$/, file: "/api/competition.ts" },
+  { re: /^\/api\/cron\/reminders\/?$/, file: "/api/cron/reminders.ts" },
   { re: /^\/api\/food\/analyze\/?$/, file: "/api/food/analyze.ts" },
   { re: /^\/api\/invites\/?$/, file: "/api/invites/index.ts" },
   { re: /^\/api\/invites\/([^/]+)\/respond\/?$/, file: "/api/invites/[id]/respond.ts", param: "id" },
   { re: /^\/api\/kv\/many\/?$/, file: "/api/kv/many.ts" },
   { re: /^\/api\/kv\/([^/]+)\/?$/, file: "/api/kv/[key].ts", param: "key" },
+  { re: /^\/api\/push\/notify\/?$/, file: "/api/push/notify.ts" },
+  { re: /^\/api\/push\/prefs\/?$/, file: "/api/push/prefs.ts" },
+  { re: /^\/api\/push\/subscribe\/?$/, file: "/api/push/subscribe.ts" },
+  { re: /^\/api\/push\/unsubscribe\/?$/, file: "/api/push/unsubscribe.ts" },
 ];
 
 function matchRoute(pathname: string): { file: string; params: Record<string, string> } | null {
