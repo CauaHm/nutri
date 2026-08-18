@@ -11,10 +11,11 @@ entre você e seu parceiro de treino, catálogo de alimentos (cadastro manual ou
 foto com IA) e alertas quando uma meta do dia é batida ou passada.
 
 Construído em Vite + React + TypeScript (frontend puro, SPA) + Vercel Serverless
-Functions em TypeScript (backend) + MongoDB (contas, convites, competições) +
-Redis/Upstash (dados do dia a dia) pra rodar na Vercel, com navegação de app nativo
+Functions em TypeScript (backend) + MongoDB (contas, convites, competições e dados do
+dia a dia, tudo no mesmo banco) pra rodar na Vercel, com navegação de app nativo
 (barra inferior + telas que abrem uma sobre a outra, dias de treino reordenáveis por
-arrastar) e suporte a "Adicionar à tela de início" (PWA) no celular.
+arrastar), instalação como PWA ("Adicionar à tela de início"), funcionamento offline
+(fila de sincronização) e notificações push (água, treino, fim de rodada e outras).
 
 ## Rodando local
 
@@ -33,12 +34,31 @@ produção). Cria um arquivo `.env.local` (ignorado pelo git) com:
 MONGODB_URI="sua connection string do MongoDB Atlas"
 ```
 
-Sem essa variável, contas/convites/competições rodam num "banco" de mentira em
-arquivo (`.data/mongo-fallback.json`) só pra dev — não funciona em produção. O
-mesmo vale pro Redis: sem `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`, os
-dados do dia a dia (treino, refeições, água...) caem num arquivo local
-(`.data/store.json`). Ambos os fallbacks são só pra testar sem precisar criar conta
-em banco nenhum antes.
+Sem essa variável, tudo (contas/convites/competições e os dados do dia a dia —
+treino, refeições, água...) roda num "banco" de mentira em arquivo
+(`.data/mongo-fallback.json`) só pra dev — não funciona em produção. Esse fallback é
+só pra testar sem precisar criar conta em banco nenhum antes.
+
+Pra testar notificações push localmente, gere um par de chaves VAPID **suas** (nunca
+use um par de outra pessoa/projeto):
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+E adicione ao `.env.local`:
+
+```
+VAPID_PUBLIC_KEY="a chave publica gerada acima"
+VAPID_PRIVATE_KEY="a chave privada gerada acima"
+VAPID_SUBJECT="mailto:seu-email@exemplo.com"
+VITE_VAPID_PUBLIC_KEY="a mesma chave publica — o prefixo VITE_ é o que expõe pro código do navegador"
+CRON_SECRET="qualquer string aleatória, só pra dev local"
+```
+
+Sem `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`, os endpoints de push
+simplesmente não enviam nada (fica registrado um aviso no console do servidor), sem
+quebrar o resto do app.
 
 ## Deploy na Vercel
 
@@ -46,23 +66,40 @@ em banco nenhum antes.
 2. Em vercel.com, "Add New Project" → importe o repositório. Framework é detectado
    automaticamente como Vite; os arquivos em `api/` viram Serverless Functions
    automaticamente (convenção de arquivo do Vercel, sem configuração extra).
-3. Adicione um banco **MongoDB** (contas, convites, competições):
+3. Adicione um banco **MongoDB** (contas, convites, competições e os dados do dia a
+   dia — treino, refeições, água... — tudo no mesmo banco):
    - Crie grátis em mongodb.com/cloud/atlas → cluster free tier → "Connect" →
      "Drivers" → copie a connection string (troque `<password>` pela senha real e
      inclua o nome do banco antes do `?`, ex: `.../rotina_metas?retryWrites=...`).
    - Cole em Project Settings → Environment Variables como `MONGODB_URI`.
    - Em "Network Access" no Atlas, libere `0.0.0.0/0` (qualquer IP) — a Vercel não
      tem IPs fixos nos planos padrão.
-4. Adicione um banco **Redis** (dados do dia a dia):
-   - No dashboard do projeto na Vercel: **Storage → Marketplace Database Providers → Upstash**
-     (ou vercel.com/marketplace/upstash). Ao conectar, a Vercel já injeta
-     `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` automaticamente.
-5. (Opcional) Adicione `ANTHROPIC_API_KEY` pra habilitar "tirar foto do alimento e a
+4. (Opcional) Adicione `ANTHROPIC_API_KEY` pra habilitar "tirar foto do alimento e a
    IA calcula a nutrição" (Nutrição → Meus Alimentos → Adicionar). Crie a chave em
    **console.anthropic.com** — **atenção: isso é uma conta de API separada, cobrada
    por uso; o plano Claude Pro do claude.ai não gera essa chave e não cobre esse
    uso.** Sem essa variável, o botão de análise por foto abre o claude.ai num link
    novo com instruções pra colar a foto lá e copiar os valores manualmente.
+5. (Opcional) Ative **notificações push** (água, treino, fim de rodada e mais):
+   - Gere seu próprio par de chaves VAPID rodando `npx web-push generate-vapid-keys`
+     na sua máquina (nunca reaproveite um par de outro projeto/tutorial).
+   - Em Project Settings → Environment Variables, adicione `VAPID_PUBLIC_KEY`,
+     `VAPID_PRIVATE_KEY` (as duas chaves geradas acima) e `VAPID_SUBJECT` (um
+     `mailto:seu-email@exemplo.com`).
+   - Adicione também `VITE_VAPID_PUBLIC_KEY` com a **mesma** chave pública acima — o
+     prefixo `VITE_` é o que expõe essa variável pro código que roda no navegador
+     (a chave privada nunca leva esse prefixo, fica só no servidor).
+   - Adicione `CRON_SECRET` com uma string aleatória longa (ex: gerada por
+     `openssl rand -hex 32`) — protege o endpoint de lembretes contra chamadas de
+     qualquer um.
+   - O plano Hobby da Vercel só permite 1 execução de cron agendado por dia, o que
+     inviabiliza lembretes horários — por isso os lembretes usam um cron **externo**
+     em vez do `vercel.json`. Em [cron-job.org](https://cron-job.org) (grátis), crie
+     um job que faça `GET` a cada hora em
+     `https://seu-projeto.vercel.app/api/cron/reminders` com o header
+     `Authorization: Bearer <o mesmo valor de CRON_SECRET>`.
+   - Sem essas variáveis configuradas, o app funciona normalmente — só não envia
+     notificações (fica registrado um aviso no log do servidor).
 6. Deploy. Cada pessoa cria sua própria conta (nome, e-mail, senha) e convida quem
    quiser pra competir.
 
@@ -90,6 +127,8 @@ src/
     bodycomp.ts              fórmulas de % gordura, TMB/TDEE, déficit, macros, comparação
     points.ts                regra de pontos do ranking + soma de kcal/proteína das refeições
     clientStorage.ts         fetch fino sobre /api/kv/*
+    notificacoes.ts          tipos/config de notificações push + mergeNotificacoes (fallback pra contas antigas)
+    usePushNotifications.ts  permissão, subscribe/unsubscribe do lado do navegador
   components/
     AuthScreen.tsx           tela de login/cadastro
     screens/                 uma tela por arquivo — telas raiz (bottom nav) e telas empilhadas
@@ -98,13 +137,18 @@ api/                       Vercel Serverless Functions (TypeScript) — cada arq
   auth/                     cadastro, login, logout, editar perfil (sessão por cookie)
   invites/                  convidar por e-mail, listar e responder convites
   competition.ts            dados da dupla atual (pontos, rodada, sair)
-  kv/                       API genérica de leitura/escrita no Redis (autorizada por sessão)
+  kv/                       API genérica de leitura/escrita no Mongo (autorizada por sessão)
+  push/                     subscribe/unsubscribe/prefs/notify — notificações push
+  cron/reminders.ts         lembretes agendados (água, treino...), chamado por cron externo
   food/analyze.ts           analisa foto de alimento com a API da Anthropic (opcional)
   _lib/                     código server-only (prefixo _ pra Vercel não tratar como rota)
     repo.ts                  acesso ao Mongo: usuários, sessões, convites, competições
     db.ts                    conexão Mongo (com fallback em arquivo pra dev sem banco)
-    store.ts                 conexão Redis/Upstash (com fallback em arquivo pra dev sem banco)
+    store.ts                 dados do dia a dia (treino, refeições, água...), mesma conexão Mongo de db.ts
     authSession.ts           sessão por cookie + regras de quem pode ler/escrever cada chave
+    push.ts                  envio de push com as regras de anti-spam (quiet hours, teto diário, debounce)
+    notificacoes.ts          tipos/config de notificações push (espelha src/lib/notificacoes.ts)
+    tempoLocal.ts            hora/data local de São Paulo (funções da Vercel rodam em UTC)
 public/                    ícones, manifest.json (servido como está pelo Vite)
 reference/
   ShapeMewtwo.original.jsx   o protótipo original, mantido só de referência

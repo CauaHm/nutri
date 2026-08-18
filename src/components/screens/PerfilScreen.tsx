@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
-import { IconLogOut, IconChevronRight, IconUserPlus, IconFlame, IconDroplet, IconActivity } from "@/components/icons";
+import { IconLogOut, IconChevronRight, IconUserPlus, IconFlame, IconDroplet, IconActivity, IconBell } from "@/components/icons";
 import { CARD2, SUB, BORDER, TEXT, PURP, PINK, CYAN, AMB, RED, COR_PALETTE, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
 import { useOfflineQueueSnapshot } from "@/lib/useOfflineQueueSnapshot";
 import type { ScreenProps } from "@/lib/screenProps";
@@ -106,6 +106,12 @@ export default function PerfilScreen({ data, nav, auth }: ScreenProps) {
             </button>
           )}
         </div>
+
+        <button onClick={() => nav.push("notificacoes")} className="tapable" style={{ ...sCard, width: "100%", padding: 14, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, background: "none", border: `1px solid ${BORDER}`, cursor: "pointer", textAlign: "left" }}>
+          <IconBell size={18} style={{ color: PURP }} />
+          <span style={{ flex: 1, fontSize: 12, color: SUB }}>Notificações — água, treino, fim de rodada...</span>
+          <IconChevronRight size={16} style={{ color: SUB }} />
+        </button>
 
         {(queue.pending > 0 || queue.problematic > 0) && (
           <div style={{ ...sCard, marginBottom: 14, padding: "10px 14px", fontSize: 11.5, color: AMB }}>
