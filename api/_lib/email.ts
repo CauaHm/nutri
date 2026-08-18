@@ -35,10 +35,14 @@ export async function sendPasswordResetEmail({ to, nome, resetUrl }: SendPasswor
   const from = process.env.EMAIL_FROM;
 
   if (!apiKey || !from) {
-    console.warn("[email] RESEND_API_KEY/EMAIL_FROM nao configuradas — email de recuperacao nao enviado. Link de reset:", resetUrl);
+    console.warn(`[email] RESEND_API_KEY/EMAIL_FROM nao configuradas — email nao enviado pra ${to}. Link de reset:`, resetUrl);
     return { sent: false, skipped: "email_not_configured" };
   }
 
+  // O link entra no log de qualquer jeito, mesmo quando o envio falha (ex:
+  // conta Resend em modo sandbox, sem dominio verificado, so entrega pro
+  // proprio dono da conta) — sem isso, uma falha de envio deixava a pessoa
+  // sem nenhum jeito de recuperar a senha, nem manualmente.
   try {
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -51,12 +55,12 @@ export async function sendPasswordResetEmail({ to, nome, resetUrl }: SendPasswor
       }),
     });
     if (!r.ok) {
-      console.error("[email] Resend recusou o envio:", r.status, await r.text().catch(() => ""));
+      console.error(`[email] Resend recusou o envio pra ${to} (status ${r.status}):`, await r.text().catch(() => ""), "— link de reset:", resetUrl);
       return { sent: false, skipped: "send_failed" };
     }
     return { sent: true };
   } catch (err: any) {
-    console.error("[email] falha ao chamar a Resend:", err?.message || err);
+    console.error(`[email] falha ao chamar a Resend pra ${to}:`, err?.message || err, "— link de reset:", resetUrl);
     return { sent: false, skipped: "send_failed" };
   }
 }
