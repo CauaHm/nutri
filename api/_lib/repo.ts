@@ -32,6 +32,12 @@ export interface Session {
   expiresAt: string;
 }
 
+export interface PasswordReset {
+  _id: string; // o proprio token — mesma convencao de Session._id
+  userId: string;
+  expiresAt: string;
+}
+
 export interface Invite {
   _id: string;
   fromUserId: string;
@@ -145,6 +151,51 @@ export async function findSession(token?: string | null): Promise<Session | null
 export async function deleteSession(token: string): Promise<void> {
   const db = await getDb();
   await db.collection<Session>("sessions").deleteOne({ _id: token });
+}
+
+export async function deleteAllSessionsForUser(userId: string): Promise<void> {
+  const db = await getDb();
+  const col = db.collection<Session>("sessions");
+  const rows = await (await col.find({ userId: String(userId) })).toArray();
+  await Promise.all(rows.map((s) => col.deleteOne({ _id: s._id })));
+}
+
+// ---- Recuperacao de senha ----------------------------------------------
+
+const RESET_MINUTOS = 60;
+
+export async function createPasswordReset(userId: string): Promise<string> {
+  const db = await getDb();
+  const col = db.collection<PasswordReset>("password_resets");
+
+  // Derruba qualquer token anterior desse usuario antes de criar um novo —
+  // evita ter mais de um link "valido" circulando ao mesmo tempo se a
+  // pessoa pedir recuperacao mais de uma vez.
+  const antigos = await (await col.find({ userId: String(userId) })).toArray();
+  await Promise.all(antigos.map((r) => col.deleteOne({ _id: r._id })));
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + RESET_MINUTOS * 60 * 1000).toISOString();
+  await col.insertOne({ _id: token, userId: String(userId), expiresAt });
+  return token;
+}
+
+// Uso unico: o token e apagado aqui independente do resultado, entao uma
+// segunda tentativa com o mesmo token (valido ou ja expirado) sempre falha.
+export async function consumePasswordReset(token: string): Promise<string | null> {
+  if (!token) return null;
+  const db = await getDb();
+  const col = db.collection<PasswordReset>("password_resets");
+  const reset = await col.findOne({ _id: token });
+  if (!reset) return null;
+  await col.deleteOne({ _id: token });
+  if (new Date(reset.expiresAt) < new Date()) return null;
+  return reset.userId;
+}
+
+export async function setUserPassword(userId: string, senha: string): Promise<void> {
+  const passwordHash = await bcrypt.hash(senha, 10);
+  await updateUser(userId, { passwordHash });
 }
 
 // ---- Convites -----------------------------------------------------------

@@ -31,10 +31,7 @@ for (const file of [".env.local", ".env"]) {
 }
 
 const ROUTES: Array<{ re: RegExp; file: string; param?: string }> = [
-  { re: /^\/api\/auth\/login\/?$/, file: "/api/auth/login.ts" },
-  { re: /^\/api\/auth\/logout\/?$/, file: "/api/auth/logout.ts" },
-  { re: /^\/api\/auth\/me\/?$/, file: "/api/auth/me.ts" },
-  { re: /^\/api\/auth\/signup\/?$/, file: "/api/auth/signup.ts" },
+  { re: /^\/api\/auth\/([^/]+)\/?$/, file: "/api/auth/[action].ts", param: "action" },
   { re: /^\/api\/competition\/?$/, file: "/api/competition.ts" },
   { re: /^\/api\/cron\/reminders\/?$/, file: "/api/cron/reminders.ts" },
   { re: /^\/api\/food\/analyze\/?$/, file: "/api/food/analyze.ts" },

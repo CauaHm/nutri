@@ -60,6 +60,23 @@ Sem `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`, os endpoints de push
 simplesmente não enviam nada (fica registrado um aviso no console do servidor), sem
 quebrar o resto do app.
 
+Pra testar a recuperação de senha ("Esqueceu a senha?" na tela de login) localmente
+sem configurar nada, não faz nada especial: sem `RESEND_API_KEY`/`EMAIL_FROM`
+configuradas, o link de redefinição só aparece no console do servidor (`npm run dev`)
+em vez de virar um e-mail de verdade — copia esse link e cola no navegador. Pra testar
+o envio real, crie uma conta grátis em [resend.com](https://resend.com), gere uma API
+key e adicione ao `.env.local`:
+
+```
+RESEND_API_KEY="a chave gerada no painel da Resend"
+EMAIL_FROM="Rotina & Metas <onboarding@resend.dev>"
+```
+
+Sem domínio próprio verificado na Resend, `onboarding@resend.dev` só entrega pro
+e-mail da conta que criou a API key — o suficiente pra testar. `APP_URL` é opcional
+(por padrão o link usa o host da própria requisição, que já funciona certo tanto em
+`localhost` quanto em produção).
+
 ## Deploy na Vercel
 
 1. Suba este projeto num repositório no GitHub.
@@ -100,7 +117,22 @@ quebrar o resto do app.
      `Authorization: Bearer <o mesmo valor de CRON_SECRET>`.
    - Sem essas variáveis configuradas, o app funciona normalmente — só não envia
      notificações (fica registrado um aviso no log do servidor).
-6. Deploy. Cada pessoa cria sua própria conta (nome, e-mail, senha) e convida quem
+6. (Opcional, mas recomendado) Ative o **envio de e-mail de recuperação de senha**
+   ("Esqueceu a senha?" na tela de login):
+   - Crie uma conta grátis em [resend.com](https://resend.com) (free tier: 3.000
+     e-mails/mês) e gere uma API key em API Keys → Create API Key.
+   - Em Project Settings → Environment Variables, adicione `RESEND_API_KEY` com a
+     chave gerada.
+   - Adicione também `EMAIL_FROM`. Sem verificar um domínio próprio na Resend, use
+     `EMAIL_FROM="Rotina & Metas <onboarding@resend.dev>"` — funciona de graça, mas só
+     entrega pro e-mail que criou a conta na Resend. Pra mandar pra qualquer pessoa,
+     verifique um domínio próprio (Domains → Add Domain na Resend) e use um endereço
+     desse domínio.
+   - Sem essas variáveis configuradas, o link de redefinição não é enviado por
+     e-mail — fica só registrado no log da função (`Deployments` → a função →
+     `Logs`), então em produção sem isso configurado ninguém consegue recuperar a
+     própria senha sozinho.
+7. Deploy. Cada pessoa cria sua própria conta (nome, e-mail, senha) e convida quem
    quiser pra competir.
 
 ## Instalar como app no celular
