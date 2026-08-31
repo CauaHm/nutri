@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:treino-rhebecca": "node scripts/seed-treino-rhebecca.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
