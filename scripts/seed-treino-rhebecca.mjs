@@ -40,11 +40,13 @@ async function main(db) {
   // Sem --email, procura por qualquer conta cujo e-mail contenha "rhebecca"
   // (case-insensitive). E-mail no banco ja vem normalizado em minusculo por
   // norm() em api/_lib/repo.ts, mas a busca insensivel nao custa nada.
-  const filtro = emailArg
-    ? { email: emailArg.trim().toLowerCase() }
-    : { email: { $regex: BUSCA_PADRAO, $options: "i" } };
-
-  const encontrados = await db.collection("users").find(filtro).toArray();
+  // Filtra em JS depois de um find({}), a mesma selecao de
+  // api/_lib/seedTreino.ts — os dois caminhos tem que escolher a mesma conta.
+  const todos = await db.collection("users").find({}).toArray();
+  const alvo = emailArg?.trim().toLowerCase();
+  const encontrados = todos.filter((u) =>
+    alvo ? String(u.email).toLowerCase() === alvo : String(u.email).toLowerCase().includes(BUSCA_PADRAO),
+  );
 
   if (encontrados.length === 0) {
     console.error(`Nenhuma conta com e-mail ${emailArg ? `= "${emailArg}"` : `contendo "${BUSCA_PADRAO}"`}.`);

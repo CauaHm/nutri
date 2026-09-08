@@ -1,0 +1,818 @@
+[
+  {
+    "dia": "Segunda",
+    "tag": "Glúteos A",
+    "emoji": "🍑",
+    "isCardio": false,
+    "cardio": "40 min esteira em casa",
+    "info": "1×10 aquecimento + 3×8 pesado · Progressão de carga",
+    "exercicios": [
+      {
+        "id": 1,
+        "nome": "Elevação Pélvica",
+        "proto": "1×10 + 3×8",
+        "foco": "Glúteo Máximo ⭐⭐⭐",
+        "nota": "Pés no meio, pontas pra fora. Força no glúteo, não no calcanhar.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "nome": "Cadeira Abdutora",
+        "proto": "1×10 + 3×8",
+        "foco": "Glúteo Médio ⭐⭐⭐",
+        "nota": "Aquec reto → Série 1 reto → Séries 2 e 3 inclinada.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "nome": "Kickback na Polia",
+        "proto": "1×10 + 3×8 cada",
+        "foco": "Glúteo Máximo ⭐⭐",
+        "nota": "Perna de apoio flexionada, chuta pra fora.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10 cada",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "nome": "Abdução Lateral na Polia",
+        "proto": "1×10 + 3×8 cada",
+        "foco": "Glúteo Médio ⭐⭐⭐",
+        "nota": "Cabo no tornozelo, levanta a perna pra fora mantendo reta.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10 cada",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "nome": "Cadeira Adutora",
+        "proto": "1×10 + 3×8",
+        "foco": "Parte Interna da Coxa",
+        "nota": "Joelhos na lateral. Espremer as coxas — relaxa o glúteo.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "dia": "Terça",
+    "tag": "Pernas",
+    "emoji": "🦵",
+    "isCardio": false,
+    "cardio": "40 min esteira em casa",
+    "info": "1×10 aquecimento + 3×8 pesado · Progressão de carga",
+    "exercicios": [
+      {
+        "id": 6,
+        "nome": "Agachamento no Smith",
+        "proto": "1×10 + 3×8",
+        "foco": "Quadríceps + Glúteo",
+        "nota": "Barra guiada, desce até 90°. Postura firme.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "nome": "Leg Press 45°",
+        "proto": "1×10 + 3×8",
+        "foco": "Quadríceps + Glúteo Máximo",
+        "nota": "Pés além do quadril, pontas pra fora.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "nome": "Stiff com Halteres",
+        "proto": "1×10 + 3×8",
+        "foco": "Posterior + Glúteo Máximo",
+        "nota": "Empina o glúteo pra trás, halteres perto da perna.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "nome": "Cadeira Extensora",
+        "proto": "1×10 + 3×8",
+        "foco": "Quadríceps",
+        "nota": "Joelho fora do banco. Controle e postura.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "nome": "Cadeira Flexora",
+        "proto": "1×10 + 3×8",
+        "foco": "Posterior de Coxa",
+        "nota": "Rolo bem perto do tornozelo. Joelho fora do banco.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "nome": "Panturrilha na Máquina",
+        "proto": "3×15",
+        "foco": "Panturrilha",
+        "nota": "Amplitude completa.",
+        "series": [
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "15"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "15"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "15"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "dia": "Quarta",
+    "tag": "Glúteos B",
+    "emoji": "🍑",
+    "isCardio": false,
+    "cardio": "40 min esteira em casa",
+    "info": "1×10 aquecimento + 3×8 pesado · Progressão de carga",
+    "exercicios": [
+      {
+        "id": 12,
+        "nome": "Elevação Pélvica",
+        "proto": "1×10 + 3×8",
+        "foco": "Glúteo Máximo ⭐⭐⭐",
+        "nota": "Sobe apertando no topo, segura 1 seg.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "nome": "Cadeira Abdutora (volume)",
+        "proto": "1×10 + 3×8",
+        "foco": "Glúteo Médio ⭐⭐⭐",
+        "nota": "Mais volume. Glúteo médio é o que alarga o quadril!",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "nome": "Kickback na Polia",
+        "proto": "1×10 + 3×8 cada",
+        "foco": "Glúteo Máximo ⭐⭐",
+        "nota": "Extensão cruzada também.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10 cada",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "nome": "Abdução Lateral na Polia",
+        "proto": "1×10 + 3×8 cada",
+        "foco": "Glúteo Médio ⭐⭐⭐",
+        "nota": "Cabo no tornozelo, levanta a perna pra fora mantendo reta.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10 cada",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8 cada"
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "nome": "Cadeira Adutora",
+        "proto": "1×10 + 3×8",
+        "foco": "Parte Interna da Coxa",
+        "nota": "Vai ficando mais fácil a cada semana!",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "dia": "Quinta",
+    "tag": "Cardio",
+    "emoji": "🏃",
+    "isCardio": true,
+    "cardio": "1 hora de esteira em casa",
+    "info": "",
+    "exercicios": []
+  },
+  {
+    "dia": "Sexta",
+    "tag": "Superior",
+    "emoji": "💪",
+    "isCardio": false,
+    "cardio": "40 min esteira em casa",
+    "info": "3×12 · Carga moderada — NÃO progredir · Tônus, não crescimento",
+    "exercicios": [
+      {
+        "id": 17,
+        "nome": "Remada Articulada",
+        "proto": "3×12",
+        "foco": "Meio das Costas (definição)",
+        "nota": "Costas retas, puxa até o abdômen. Carga moderada.",
+        "series": [
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "nome": "Remada Baixa Cabo",
+        "proto": "3×12",
+        "foco": "Meio das Costas (definição)",
+        "nota": "Peito estufado, escápula travada.",
+        "series": [
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "nome": "Pulldown (pegada fechada)",
+        "proto": "3×12",
+        "foco": "Costas (sem alargar)",
+        "nota": "Pegada fechada! Puxa até a cintura.",
+        "series": [
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "nome": "Tríceps na Máquina",
+        "proto": "3×12",
+        "foco": "Tríceps (2/3 do braço)",
+        "nota": "Cotovelos fixos. Braços finos vêm daqui!",
+        "series": [
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "nome": "Rosca com Halteres",
+        "proto": "3×12",
+        "foco": "Bíceps (definição)",
+        "nota": "Sobe contraindo, desce alongando ao máximo.",
+        "series": [
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "nome": "Scott Máquina",
+        "proto": "3×12",
+        "foco": "Bíceps (definição)",
+        "nota": "Cotovelo fixo. Desce e sobe controlado.",
+        "series": [
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 3,
+            "reps": "12"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "dia": "Sábado",
+    "tag": "Glúteos + Pernas C",
+    "emoji": "🔥",
+    "isCardio": false,
+    "cardio": "40 min esteira em casa",
+    "info": "1×10 aquecimento + 3×8 pesado · Progressão de carga",
+    "exercicios": [
+      {
+        "id": 23,
+        "nome": "Elevação Pélvica",
+        "proto": "1×10 + 3×8",
+        "foco": "Glúteo Máximo ⭐⭐⭐",
+        "nota": "Mais pesado que segunda se conseguir!",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 24,
+        "nome": "Cadeira Abdutora",
+        "proto": "1×10 + 3×8",
+        "foco": "Glúteo Médio ⭐⭐⭐",
+        "nota": "Aquec reto → reto → 2x inclinada.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "nome": "Leg Press 45° (pé alto e largo)",
+        "proto": "1×10 + 3×8",
+        "foco": "Glúteo Máximo + Médio",
+        "nota": "Pés bem altos E mais abertos na plataforma.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 26,
+        "nome": "Stiff com Halteres",
+        "proto": "1×10 + 3×8",
+        "foco": "Posterior + Glúteo Máximo",
+        "nota": "Empina o glúteo pra trás, halteres perto da perna.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      },
+      {
+        "id": 27,
+        "nome": "Cadeira Adutora",
+        "proto": "1×10 + 3×8",
+        "foco": "Parte Interna da Coxa",
+        "nota": "Fecha o dia equilibrando com a abdutora.",
+        "series": [
+          {
+            "tipo": "aquecimento",
+            "reps": "10",
+            "percentual": 60
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          },
+          {
+            "tipo": "reserva",
+            "rir": 2,
+            "reps": "8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "dia": "Domingo",
+    "tag": "Cardio",
+    "emoji": "🏃",
+    "isCardio": true,
+    "cardio": "1 hora de esteira em casa",
+    "info": "",
+    "exercicios": []
+  }
+]

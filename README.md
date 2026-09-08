@@ -135,6 +135,36 @@ e-mail da conta que criou a API key — o suficiente pra testar. `APP_URL` é op
 7. Deploy. Cada pessoa cria sua própria conta (nome, e-mail, senha) e convida quem
    quiser pra competir.
 
+## Carregar um treino pronto numa conta
+
+`scripts/treino-rhebecca.mjs` + `api/_lib/treinoRhebecca.json` trazem um treino de
+semana inteira já no formato que o app usa. Pra gravar numa conta existem dois
+caminhos, e os dois escrevem exatamente a mesma coisa na chave `<userId>_treino`,
+fazendo backup do treino anterior numa chave irmã antes de sobrescrever:
+
+**Do computador**, com o `MONGODB_URI` no `.env.local`:
+
+```bash
+npm run seed:treino-rhebecca -- --dry-run   # mostra a conta e o que faria
+npm run seed:treino-rhebecca                # grava
+```
+
+**Do celular**, sem terminal, pela rota `api/admin/seed-treino.ts`: adicione
+`ADMIN_SECRET` (uma string aleatória longa, ex: `openssl rand -hex 32`) nas
+Environment Variables da Vercel e abra no navegador:
+
+```
+https://seu-projeto.vercel.app/api/admin/seed-treino?secret=SEU_ADMIN_SECRET
+https://seu-projeto.vercel.app/api/admin/seed-treino?secret=SEU_ADMIN_SECRET&confirm=1
+```
+
+A primeira URL só mostra o que aconteceria; sem `&confirm=1` nada é gravado. Se mais
+de uma conta bater com a busca, a rota devolve 409 com a lista e não grava nada — aí
+repita com `&email=aconta@exemplo.com`. **Sem `ADMIN_SECRET` configurada a rota
+responde 404 e nunca toca no banco.** Como o segredo vai na URL, ele fica no
+histórico do navegador e nos logs de acesso: trate como uso pontual e troque o valor
+depois de usar.
+
 ## Instalar como app no celular
 
 Abra o link da Vercel no navegador do celular (Safari no iPhone, Chrome no Android) e
