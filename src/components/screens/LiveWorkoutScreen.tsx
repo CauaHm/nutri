@@ -4,7 +4,7 @@ import { IconCheck, IconChevronLeft, IconChevronRight } from "@/components/icons
 import { PINK, PURP, GRN, AMB, RED, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
 import { todayStr } from "@/lib/dates";
 import { getRestSeconds } from "@/lib/restTimer";
-import { buildInitialSession, computeSummary, parseRepsFromProto, workingSets, type LiveWorkoutSession, type SessionSummary } from "@/lib/liveWorkout";
+import { buildInitialSession, computeSummary, workingSets, historicoDoExercicio, recordeDoExercicio, repsParaLog, type LiveWorkoutSession, type SessionSummary } from "@/lib/liveWorkout";
 import type { ScreenProps } from "@/lib/screenProps";
 import type { WeightLog } from "@/lib/useAppData";
 
@@ -145,6 +145,15 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
     updateSession({ ...session, exercises: nextExercises });
   };
 
+  // Passo de 2,5kg nos botoes -/+ : digitar numero em teclado de celular no
+  // meio da serie e o pior momento possivel, e 2,5kg e o menor par de anilhas
+  // da maioria das academias. Aceita virgula (pt-BR) e nunca desce de zero.
+  const ajustarPeso = (setIndex: number, delta: number) => {
+    const atual = parseFloat((exProgress.sets[setIndex].weight || "0").replace(",", ".")) || 0;
+    const proximo = Math.max(0, Math.round((atual + delta) * 2) / 2);
+    setWeight(setIndex, proximo ? String(proximo) : "");
+  };
+
   const goTo = (nextIndex: number) => {
     const clamped = Math.max(0, Math.min(session.exercises.length - 1, nextIndex));
     updateSession({ ...session, currentExerciseIndex: clamped });
@@ -158,9 +167,9 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
       const workingOnly = workingSets(ex.sets);
       const doneWeights = workingOnly.filter((s) => s.done && s.weight).map((s) => parseFloat(s.weight!) || 0);
       if (!doneWeights.length) continue;
-      const doneCount = workingOnly.filter((s) => s.done).length;
+      const concluidas = workingOnly.filter((s) => s.done);
       const original = dia.exercicios.find((o) => (o.id !== undefined && o.id === ex.exId) || o.nome === ex.nome);
-      await saveWeightLog({ ex: ex.nome, data: todayStr(), kg: String(Math.max(...doneWeights)), sets: String(doneCount), reps: parseRepsFromProto(original?.proto || "") });
+      await saveWeightLog({ ex: ex.nome, data: todayStr(), kg: String(Math.max(...doneWeights)), sets: String(concluidas.length), reps: repsParaLog(concluidas, original?.proto || "") });
     }
     await saveLiveSession(null);
     setSummary(resumo);
@@ -194,6 +203,38 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
           </div>
         )}
 
+        {(() => {
+          // Cargas anteriores deste exercicio, pra decidir a de hoje sem sair
+          // da tela. Usa preSessionWeightLogs (o historico como estava quando
+          // a sessao comecou) pra que o log gravado ao finalizar o treino nao
+          // apareca aqui como se fosse "anterior".
+          const anteriores = historicoDoExercicio(preSessionWeightLogs.current, exOriginal.nome);
+          const pr = recordeDoExercicio(preSessionWeightLogs.current, exOriginal.nome);
+          if (anteriores.length === 0) {
+            return (
+              <div style={{ ...sCard, padding: "10px 14px", marginBottom: 14, fontSize: 11, color: SUB }}>
+                Primeira vez registrando <strong style={{ color: TEXT }}>{exOriginal.nome}</strong> — o peso de hoje vira a referência das próximas.
+              </div>
+            );
+          }
+          return (
+            <div style={{ ...sCard, padding: "10px 14px", marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                <span style={{ fontSize: 9.5, color: SUB, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Últimas cargas</span>
+                {pr > 0 && <span style={{ fontSize: 9.5, color: GRN, background: `${GRN}18`, padding: "2px 7px", borderRadius: 10, fontWeight: 700 }}>🏆 PR {pr}kg</span>}
+              </div>
+              <div style={{ display: "flex", gap: 7, overflowX: "auto" }}>
+                {anteriores.map((l) => (
+                  <div key={l.id} style={{ flexShrink: 0, background: CARD2, borderRadius: 9, padding: "7px 11px", border: `1px solid ${parseFloat(l.kg) === pr ? `${GRN}40` : BORDER}` }}>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: parseFloat(l.kg) === pr ? GRN : TEXT }}>{l.kg}kg</div>
+                    <div style={{ fontSize: 9.5, color: SUB, marginTop: 1 }}>{l.sets}×{l.reps} · {l.data.slice(0, 5)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {rest.timer && (
           <div style={{ ...sCard, padding: "12px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, border: `1px solid ${rest.timer.completed ? GRN : PINK}40` }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -210,7 +251,7 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
 
         <div style={{ ...sCard, overflow: "hidden", marginBottom: 14 }}>
           {exProgress.sets.map((s, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: i < exProgress.sets.length - 1 ? `1px solid ${BORDER}` : "none" }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderBottom: i < exProgress.sets.length - 1 ? `1px solid ${BORDER}` : "none", background: s.done ? `${GRN}08` : "transparent" }}>
               <button
                 onClick={() => toggleSet(i)}
                 className="tapable"
@@ -219,22 +260,34 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
               >
                 {s.done ? <IconCheck size={16} style={{ color: GRN }} /> : <span style={{ fontSize: 11, color: SUB, fontWeight: 700 }}>{i + 1}</span>}
               </button>
-              <div style={{ flex: 1, fontSize: 12, color: SUB }}>
-                Série {i + 1}
+              <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: SUB }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                  <span>Série {i + 1}</span>
+                  {s.reps && <span style={{ fontWeight: 800, fontSize: 13, color: TEXT }}>{s.reps} reps</span>}
+                </div>
                 {s.tipo && s.tipo !== "normal" && (
                   <div style={{ fontSize: 10, fontWeight: 700, marginTop: 2, color: s.tipo === "aquecimento" ? AMB : s.tipo === "reserva" ? PURP : RED }}>
                     {s.tipo === "aquecimento" ? `Aquecimento${s.percentual != null ? ` · ~${s.percentual}%` : ""}` : s.tipo === "reserva" ? `Reserva${s.rir != null ? ` · RIR ${s.rir}` : ""}` : "Até a falha"}
                   </div>
                 )}
+                {/* So aparece quando o que esta no campo saiu do plano: repetir
+                    "planejado 40kg" embaixo de um campo que ja mostra 40 e ruido. */}
+                {s.pesoPlanejado && s.pesoPlanejado !== (s.weight || "") && (
+                  <div style={{ fontSize: 10, color: SUB, marginTop: 2 }}>planejado: {s.pesoPlanejado}kg</div>
+                )}
               </div>
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="kg"
-                value={s.weight || ""}
-                onChange={(e) => setWeight(i, e.target.value)}
-                style={{ ...sInp, width: 80, textAlign: "center" }}
-              />
+              <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                <button onClick={() => ajustarPeso(i, -2.5)} className="tapable" aria-label="Diminuir 2,5kg" style={{ width: 28, height: 34, borderRadius: 8, background: "#ffffff10", border: "none", color: TEXT, fontSize: 15, fontWeight: 700, cursor: "pointer", padding: 0 }}>−</button>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="kg"
+                  value={s.weight || ""}
+                  onChange={(e) => setWeight(i, e.target.value)}
+                  style={{ ...sInp, width: 62, minHeight: 34, padding: "6px 4px", textAlign: "center" }}
+                />
+                <button onClick={() => ajustarPeso(i, 2.5)} className="tapable" aria-label="Aumentar 2,5kg" style={{ width: 28, height: 34, borderRadius: 8, background: "#ffffff10", border: "none", color: TEXT, fontSize: 15, fontWeight: 700, cursor: "pointer", padding: 0 }}>+</button>
+              </div>
             </div>
           ))}
         </div>

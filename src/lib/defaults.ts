@@ -102,6 +102,12 @@ export interface SerieConfig {
   reps?: string; // texto livre, ex: "8-10"
   rir?: number; // so relevante pra tipo "reserva", ex: 2
   percentual?: number; // so relevante pra tipo "aquecimento", ex: 60 (% do peso de trabalho)
+  // Peso planejado pra esta serie, em kg, decidido ANTES do treino. Texto
+  // livre (aceita virgula) porque e o mesmo formato que o usuario digita no
+  // treino ao vivo e em WeightLog.kg. Opcional e sem migracao: ausente
+  // significa "decide na hora", e ai o treino ao vivo pre-preenche pelo
+  // historico, como sempre fez.
+  peso?: string;
 }
 
 export interface Exercicio {

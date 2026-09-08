@@ -1,5 +1,5 @@
 import type { Exercicio, SerieConfig } from "./defaults";
-import { parseSetsFromProto } from "./liveWorkout";
+import { parseProtocolo, parseSetsFromProto } from "./liveWorkout";
 
 // Fonte unica de verdade pra "quantas series/que tipo tem esse exercicio" —
 // todo consumidor deve ler por aqui, nunca chamar parseSetsFromProto direto
@@ -9,8 +9,14 @@ import { parseSetsFromProto } from "./liveWorkout";
 // legado 100% "normal" a partir do proto de texto livre.
 export function getSeriesPlan(ex: Exercicio): SerieConfig[] {
   if (ex.series && ex.series.length > 0) return ex.series;
-  const n = parseSetsFromProto(ex.proto);
-  return Array.from({ length: n }, () => ({ tipo: "normal" as const }));
+  const segmentos = parseProtocolo(ex.proto);
+  if (segmentos.length === 0) {
+    return Array.from({ length: parseSetsFromProto(ex.proto) }, () => ({ tipo: "normal" as const }));
+  }
+  // Um plano legado continua 100% "normal" (classificar sozinho o que e
+  // aquecimento seria inventar intencao que o proto nao diz), mas ao menos
+  // respeita a contagem e as reps de cada trecho.
+  return segmentos.flatMap((seg) => Array.from({ length: seg.sets }, () => ({ tipo: "normal" as const, reps: seg.reps })));
 }
 
 // Texto bruto apos o primeiro x/X/× do proto, ex: "4×8-10" -> "8-10".
@@ -42,14 +48,32 @@ const RAMP_POR_QTD: Record<number, number[]> = {
 // aquecimento tipicamente 2-4 series em rampa de ~50%->85% do peso de
 // trabalho, cargas/rep-ranges mais pesados pedem mais series de aquecimento.
 export function buildAutoSeriesPlan(ex: Exercicio, opts?: { lastSetToFailure?: boolean }): SerieConfig[] {
-  const workingSetsCount = parseSetsFromProto(ex.proto);
-  const reps = rawRepsFromProto(ex.proto);
+  const segmentos = parseProtocolo(ex.proto);
+
+  // Proto com mais de um trecho ja diz onde esta o aquecimento: "1×10 + 3×8"
+  // e literalmente "1 serie de 10 antes, 3 de 8 valendo". Nesse caso o
+  // protocolo manda e a heuristica de rampa nem entra — ela so existe pra
+  // protocolo de um trecho so, que nao diz nada sobre aquecimento.
+  const temAquecimentoExplicito = segmentos.length > 1;
+  const ultimo = segmentos[segmentos.length - 1];
+
+  const workingSetsCount = temAquecimentoExplicito ? ultimo.sets : parseSetsFromProto(ex.proto);
+  const reps = temAquecimentoExplicito ? ultimo.reps : rawRepsFromProto(ex.proto);
 
   const leadingReps = leadingRepsInt(ex.proto);
   const warmupCount = leadingReps === null ? 2 : leadingReps <= 6 ? 3 : leadingReps <= 10 ? 2 : 1;
   const ramp = RAMP_POR_QTD[warmupCount] || RAMP_POR_QTD[2];
 
-  const warmups: SerieConfig[] = ramp.map((percentual) => ({ tipo: "aquecimento", percentual }));
+  const warmups: SerieConfig[] = temAquecimentoExplicito
+    ? segmentos.slice(0, -1).flatMap((seg) =>
+        Array.from({ length: seg.sets }, (_, i) => ({
+          tipo: "aquecimento" as const,
+          reps: seg.reps,
+          // Uma serie de aquecimento so: 60%. Varias: rampa ate 85%.
+          percentual: seg.sets === 1 ? 60 : Math.round(50 + (35 * i) / Math.max(1, seg.sets - 1)),
+        })),
+      )
+    : ramp.map((percentual) => ({ tipo: "aquecimento", percentual }));
 
   const working: SerieConfig[] = Array.from({ length: workingSetsCount }, () => ({ tipo: "reserva" as const, rir: 2, reps }));
   if (opts?.lastSetToFailure && working.length > 0) {

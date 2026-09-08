@@ -231,3 +231,17 @@ Nome, cor, metas de kcal/água/proteína, sexo/altura/idade, treinos, refeiçõe
 de compras e receitas são editáveis dentro do app — não precisa mexer em código.
 `lib/defaults.js` só define o estado inicial de uma conta nova (o que aparece na
 primeira vez que alguém se cadastra); depois disso, tudo vem do banco.
+
+No treino especificamente dá pra montar cada dia por inteiro sem sair do app:
+arrastar os dias pra reordenar, duplicar um dia inteiro, e dentro do dia
+adicionar/editar/reordenar exercícios, duplicá-los ou copiá-los pra outro dia. Cada
+exercício tem um **planejamento de séries** próprio: quantas séries, de que tipo
+(aquecimento, normal, reserva com RIR ou até a falha), quantas repetições, a % do
+peso de trabalho no aquecimento e o **peso planejado em kg** — decidido antes de
+pisar na academia. O botão "⚡ Gerar automaticamente" monta esse plano a partir do
+protocolo escrito (`1×10 + 3×8` vira 1 aquecimento a 60% + 3 séries em RIR 2).
+
+Durante o treino ao vivo, cada série mostra as repetições planejadas, vem com o peso
+já preenchido (o planejado, ou o último registrado) e tem botões de −/+ 2,5 kg pra
+não ter que digitar no meio da série. No topo aparecem as **últimas cargas** daquele
+exercício com o PR destacado, pra decidir a carga de hoje olhando a de antes.
