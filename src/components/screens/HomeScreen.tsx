@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { todayStr, weekdayPT, getWeekStart } from "@/lib/dates";
 import {
   IconMenu, IconBell, IconChevronRight, IconDroplet, IconFlame, IconDumbbell,
-  IconStar, IconTrophy, IconSend, IconPlus, IconMinus, IconCheck, IconZap, IconEdit,
+  IconStar, IconTrophy, IconSend, IconPlus, IconMinus, IconCheck, IconZap, IconEdit, IconStreak,
 } from "@/components/icons";
 import { CARD2, PINK, CYAN, GRN, AMB, RED, PURP, SUB, BORDER, TEXT, sCard, sBtn, sInp } from "@/lib/theme";
 import RingProgress from "@/components/RingProgress";
@@ -114,6 +114,39 @@ export default function HomeScreen({ data, nav }: ScreenProps) {
           )}
         </button>
       </div>
+
+      {/* Ofensiva — atalho pra aba Rotina. Fica no topo do Início de
+          proposito: a corrente de dias e a recompensa visivel do dia, e
+          precisa aparecer antes de qualquer numero de caloria. */}
+      {data.rotina.ready && data.rotina.tarefas.length > 0 && (
+        <div style={{ padding: "14px 16px 0" }}>
+          <button
+            onClick={() => nav.goTab("rotina")}
+            className="tapable"
+            style={{ width: "100%", textAlign: "left", ...sCard, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", borderColor: `${user.cor}33` }}
+          >
+            <IconStreak size={20} style={{ color: user.cor, flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                {data.rotina.ofensiva.atual} {data.rotina.ofensiva.atual === 1 ? "dia" : "dias"} de ofensiva
+                {data.rotina.ofensivaDupla ? ` · dupla: ${data.rotina.ofensivaDupla.atual}` : ""}
+              </div>
+              <div style={{ fontSize: 10.5, color: SUB, marginTop: 1 }}>
+                {data.rotina.resumoHoje.status === "fechado"
+                  ? "dia fechado 🔥"
+                  : `${data.rotina.resumoHoje.essenciaisFeitos} de ${data.rotina.resumoHoje.essenciaisTotal} metas de hoje`}
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: user.cor, fontVariantNumeric: "tabular-nums" }}>
+                {data.rotina.ofensiva.atual}/{data.rotina.ofensiva.meta}
+              </div>
+              <div style={{ fontSize: 9.5, color: SUB }}>meta</div>
+            </div>
+            <IconChevronRight size={16} style={{ color: SUB, flexShrink: 0 }} />
+          </button>
+        </div>
+      )}
 
       <div style={{ padding: "16px 16px 0" }}>
         {/* Anel de resumo do dia */}

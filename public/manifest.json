@@ -1,7 +1,7 @@
 {
-  "name": "Rotina & Metas",
-  "short_name": "Rotina",
-  "description": "Treino, dieta, água e metas — a dois",
+  "name": "Pacto",
+  "short_name": "Pacto",
+  "description": "A rotina de vocês dois, dia a dia, com ofensiva de 60 dias",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

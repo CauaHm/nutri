@@ -2,14 +2,15 @@
 // src/lib/notificacoes.ts (api/ e src/ sao projetos TS separados, sem
 // imports cruzados — mesmo padrao que User ja e duplicado dos dois lados).
 //
-// 8 tipos: 4 lembretes agendados (agua/treino/refeicao/pesagem) + 4
-// eventos entre parceiros (fimDeRodada/parceiroPR/parceiroRanking/badge).
-// So agua/treino/fimDeRodada vem ligados por padrao — os outros exigem opt-in
-// explicito (menos intrusivos, mas tambem menos validados nesta fase).
+// 9 tipos: 4 lembretes agendados (agua/treino/refeicao/pesagem) + 5
+// eventos entre parceiros (fimDeRodada/parceiroPR/parceiroRanking/badge/
+// parceiroRotina). agua/treino/fimDeRodada/parceiroRotina vem ligados por
+// padrao — os outros exigem opt-in explicito.
 
 export type TipoNotificacao =
   | "agua" | "treino" | "fimDeRodada" | "refeicao"
-  | "pesagem" | "parceiroPR" | "parceiroRanking" | "badge";
+  | "pesagem" | "parceiroPR" | "parceiroRanking" | "badge"
+  | "parceiroRotina";
 
 export interface NotificacoesConfig {
   agua: { on: boolean; horarios: string[] }; // ["10:00","15:00","19:00"], granularidade de hora (cron externo so tem precisao horaria)
@@ -20,6 +21,7 @@ export interface NotificacoesConfig {
   parceiroPR: { on: boolean };
   parceiroRanking: { on: boolean };
   badge: { on: boolean };
+  parceiroRotina: { on: boolean }; // meta da rotina concluida / dia fechado pelo parceiro
   quietHours: { inicio: string; fim: string }; // "22:00" / "07:00" — cruza a meia-noite
 }
 
@@ -32,6 +34,7 @@ export const NOTIFICACOES_PADRAO: NotificacoesConfig = {
   parceiroPR: { on: false },
   parceiroRanking: { on: false },
   badge: { on: false },
+  parceiroRotina: { on: true },
   quietHours: { inicio: "22:00", fim: "07:00" },
 };
 
@@ -51,6 +54,7 @@ export function mergeNotificacoes(saved?: Partial<NotificacoesConfig> | null): N
     parceiroPR: { ...NOTIFICACOES_PADRAO.parceiroPR, ...(s.parceiroPR || {}) },
     parceiroRanking: { ...NOTIFICACOES_PADRAO.parceiroRanking, ...(s.parceiroRanking || {}) },
     badge: { ...NOTIFICACOES_PADRAO.badge, ...(s.badge || {}) },
+    parceiroRotina: { ...NOTIFICACOES_PADRAO.parceiroRotina, ...(s.parceiroRotina || {}) },
     quietHours: { ...NOTIFICACOES_PADRAO.quietHours, ...(s.quietHours || {}) },
   };
 }
@@ -58,4 +62,9 @@ export function mergeNotificacoes(saved?: Partial<NotificacoesConfig> | null): N
 // Tipos de evento entre parceiros — sujeitos ao debounce de 12h em
 // sendToUser (push.ts). Lembretes agendados (agua/treino/refeicao/pesagem)
 // NUNCA passam por esse debounce.
+//
+// parceiroRotina tambem fica DE FORA: o app existe justamente pra avisar
+// cada meta concluida, varias vezes ao dia — quem segura o volume aqui e o
+// teto diario de push.ts, nao um debounce de 12h que mataria tudo depois da
+// primeira meta do dia.
 export const TIPOS_DEBOUNCE_12H: TipoNotificacao[] = ["fimDeRodada", "parceiroPR", "parceiroRanking", "badge"];

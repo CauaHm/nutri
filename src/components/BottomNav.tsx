@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { BORDER, SUB } from "@/lib/theme";
-import { IconHome, IconDumbbell, IconApple, IconUser } from "@/components/icons";
+import { IconHome, IconDumbbell, IconApple, IconUser, IconStreak } from "@/components/icons";
 import type { IconProps } from "@/components/icons";
 
 interface NavItem {
@@ -11,6 +11,7 @@ interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: "inicio", label: "Início", Icon: IconHome },
+  { key: "rotina", label: "Rotina", Icon: IconStreak },
   { key: "treino", label: "Treino", Icon: IconDumbbell },
   { key: "nutricao", label: "Nutrição", Icon: IconApple },
   { key: "perfil", label: "Perfil", Icon: IconUser },

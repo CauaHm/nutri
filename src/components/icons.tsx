@@ -197,3 +197,38 @@ export const IconAward = (p: IconProps) => (
 export const IconZap = (p: IconProps) => (
   <Svg {...p}><path d="M12.5 3 5.5 13h5.2L11 21l7-10.5h-5.2z" /></Svg>
 );
+
+// --- Rotina -------------------------------------------------------------
+
+export const IconClock = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="12" r="8.6" /><path d="M12 7.4V12l3 1.9" /></Svg>
+);
+
+export const IconPlay = (p: IconProps) => (
+  <Svg {...p}><path d="M8 5.6 18 12 8 18.4z" /></Svg>
+);
+
+export const IconX = (p: IconProps) => (
+  <Svg {...p}><path d="M6.5 6.5l11 11" /><path d="M17.5 6.5l-11 11" /></Svg>
+);
+
+export const IconMoon = (p: IconProps) => (
+  <Svg {...p}><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2z" /></Svg>
+);
+
+export const IconRotate = (p: IconProps) => (
+  <Svg {...p}><path d="M20 12a8 8 0 1 1-2.6-5.9" /><path d="M20 4v4.5h-4.5" /></Svg>
+);
+
+export const IconListCheck = (p: IconProps) => (
+  <Svg {...p}><path d="M4 7l1.8 1.8L9 5.5" /><path d="M4 16.2 5.8 18 9 14.7" /><path d="M12.5 7.2H20" /><path d="M12.5 16.4H20" /></Svg>
+);
+
+// Chama de verdade — IconFlame (mais antigo) tem silhueta de gota e fica
+// ambíguo ao lado de "Água"; a ofensiva usa esta.
+export const IconStreak = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3.2c3.1 3.3 4.8 5.9 4.8 8.6a4.8 4.8 0 0 1-9.6 0c0-1.5.5-2.8 1.5-4 .3 1.3.9 2.1 1.9 2.5C10.1 8.4 10.7 5.9 12 3.2z" />
+    <path d="M12 20.8a2.5 2.5 0 0 0 2.5-2.5c0-1.2-.8-2.1-2.5-3.6-1.7 1.5-2.5 2.4-2.5 3.6a2.5 2.5 0 0 0 2.5 2.5z" />
+  </Svg>
+);

@@ -23,6 +23,7 @@ interface TipoInfo {
 }
 
 const TIPOS_SIMPLES: TipoInfo[] = [
+  { key: "parceiroRotina", emoji: "🔥", label: "Meta da rotina", desc: "avisa na hora em que sua dupla conclui uma meta marcada como \"avisa\" — e quando fecha o dia inteiro" },
   { key: "fimDeRodada", emoji: "🏆", label: "Fim de rodada", desc: "avisa os dois quando alguém bate a meta e a rodada termina" },
   { key: "refeicao", emoji: "🍽️", label: "Refeição atrasada", desc: "lembrete se uma refeição configurada passou 1h sem registro" },
   { key: "pesagem", emoji: "⚖️", label: "Pesagem semanal", desc: "lembrete toda segunda de manhã se faz mais de 7 dias sem medição" },

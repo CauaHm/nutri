@@ -18,6 +18,9 @@ import type { User, NavApi } from "@/lib/types";
 import type { ScreenProps } from "@/lib/screenProps";
 
 import HomeScreen from "@/components/screens/HomeScreen";
+import RotinaScreen from "@/components/screens/RotinaScreen";
+import RotinaConfigScreen from "@/components/screens/RotinaConfigScreen";
+import RevisaoScreen from "@/components/screens/RevisaoScreen";
 import TreinoScreen from "@/components/screens/TreinoScreen";
 import NutricaoScreen from "@/components/screens/NutricaoScreen";
 import PerfilScreen from "@/components/screens/PerfilScreen";
@@ -42,9 +45,11 @@ import NotificacoesScreen from "@/components/screens/NotificacoesScreen";
 
 type ScreenComponent = (props: ScreenProps) => ReactElement | null;
 
-const ROOTS: Record<string, ScreenComponent> = { inicio: HomeScreen, treino: TreinoScreen, nutricao: NutricaoScreen, perfil: PerfilScreen };
+const ROOTS: Record<string, ScreenComponent> = { inicio: HomeScreen, rotina: RotinaScreen, treino: TreinoScreen, nutricao: NutricaoScreen, perfil: PerfilScreen };
 const PUSHED: Record<string, ScreenComponent> = {
   ranking: RankingScreen,
+  "rotina-config": RotinaConfigScreen,
+  "rotina-revisao": RevisaoScreen,
   "treino-dia": TreinoDiaScreen,
   "treino-cargas": CargasScreen,
   "treino-live": LiveWorkoutScreen,

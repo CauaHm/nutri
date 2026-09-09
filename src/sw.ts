@@ -69,7 +69,7 @@ self.addEventListener("push", (event: PushEvent) => {
     renotify: true,
     data: { url: data.url || "/" },
   };
-  event.waitUntil(self.registration.showNotification(data.title || "Rotina & Metas", options));
+  event.waitUntil(self.registration.showNotification(data.title || "Pacto", options));
 });
 
 self.addEventListener("notificationclick", (event: NotificationEvent) => {

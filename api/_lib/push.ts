@@ -23,7 +23,12 @@ import { diaLocalSP_ISO, dentroDoQuietHours } from "./tempoLocal";
 
 const DIAS_RETENCAO_LOG = 3;
 const HORAS_DEBOUNCE = 12;
-const TETO_DIARIO = 4;
+// Subiu de 4 pra 8 quando a Rotina entrou: com 3 lembretes de agua/dia o
+// teto antigo consumia quase tudo antes da primeira meta concluida chegar
+// no parceiro, que e o ponto do app. 8 ainda e baixo o bastante pra nao
+// virar ruido (a media real fica bem abaixo — a maioria dos disparos e
+// suprimida pelas outras 3 regras).
+const TETO_DIARIO = 8;
 
 export interface PushNotificationInput {
   tipo: TipoNotificacao;

@@ -21,7 +21,7 @@ function emailHtml(nome: string, resetUrl: string): string {
   return `
 <div style="background:#0d0118;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:420px;margin:0 auto;background:#160d28;border-radius:16px;padding:32px 28px;border:1px solid #2a1a45;">
-    <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#e040fb,#a855f7);-webkit-background-clip:text;background-clip:text;color:#e040fb;margin-bottom:20px;">Rotina & Metas</div>
+    <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#e040fb,#a855f7);-webkit-background-clip:text;background-clip:text;color:#e040fb;margin-bottom:20px;">Pacto</div>
     <p style="color:#ede9f6;font-size:14px;line-height:1.5;margin:0 0 8px;">Oi${primeiroNome ? `, ${primeiroNome}` : ""}!</p>
     <p style="color:#ede9f6;font-size:14px;line-height:1.5;margin:0 0 20px;">Pediram a redefinição da senha da sua conta. Se foi você, toque no botão abaixo pra escolher uma senha nova. O link expira em 1 hora.</p>
     <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#e040fb,#a855f7);color:#fff;font-weight:700;font-size:13px;text-decoration:none;padding:12px 20px;border-radius:10px;">Redefinir minha senha</a>
@@ -50,7 +50,7 @@ export async function sendPasswordResetEmail({ to, nome, resetUrl }: SendPasswor
       body: JSON.stringify({
         from,
         to,
-        subject: "Redefinir sua senha — Rotina & Metas",
+        subject: "Redefinir sua senha — Pacto",
         html: emailHtml(nome, resetUrl),
       }),
     });

@@ -85,7 +85,7 @@ const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isBool = (v: any): v is boolean => typeof v === "boolean";
 const isHora = (v: any): v is string => typeof v === "string" && HORA_RE.test(v);
 const isHorarios = (v: any): v is string[] => Array.isArray(v) && v.length <= 10 && v.every((h) => isHora(h));
-const TIPOS_SIMPLES = ["fimDeRodada", "refeicao", "pesagem", "parceiroPR", "parceiroRanking", "badge"] as const;
+const TIPOS_SIMPLES = ["fimDeRodada", "refeicao", "pesagem", "parceiroPR", "parceiroRanking", "badge", "parceiroRotina"] as const;
 
 async function prefs(req: VercelRequest, res: VercelResponse, userId: string, notificacoesAtuais: NotificacoesConfig | undefined) {
   const body = req.body || {};
@@ -99,6 +99,7 @@ async function prefs(req: VercelRequest, res: VercelResponse, userId: string, no
     parceiroPR: { ...base.parceiroPR },
     parceiroRanking: { ...base.parceiroRanking },
     badge: { ...base.badge },
+    parceiroRotina: { ...base.parceiroRotina },
     quietHours: { ...base.quietHours },
   };
 
@@ -124,7 +125,19 @@ async function prefs(req: VercelRequest, res: VercelResponse, userId: string, no
 }
 
 // ---- POST /api/push/notify ----
-const TIPOS_VALIDOS: TipoNotificacao[] = ["fimDeRodada", "parceiroPR", "parceiroRanking", "badge"];
+const TIPOS_VALIDOS: TipoNotificacao[] = ["fimDeRodada", "parceiroPR", "parceiroRanking", "badge", "parceiroRotina"];
+
+// `texto` de parceiroRotina vem do cliente (titulo da tarefa concluida, que
+// o proprio usuario digitou na tela de rotina) e vai direto pro corpo da
+// notificacao — entao e cortado e limpo de quebras de linha aqui. Nunca
+// entra em HTML: o payload e JSON e o service worker passa como texto puro
+// pra Notification API.
+const MAX_TEXTO = 60;
+function textoSeguro(v: any): string | null {
+  if (typeof v !== "string") return null;
+  const limpo = v.replace(/\s+/g, " ").trim().slice(0, MAX_TEXTO);
+  return limpo || null;
+}
 // Copy dos 3 tipos de evento entre parceiros que ainda nao tem ponto de
 // disparo no cliente nesta fase (opt-in, desligados por padrao — corte de
 // escopo explicito). A rota ja aceita e roteia corretamente pro parceiro,
@@ -136,9 +149,32 @@ const COPY_PARCEIRO: Record<string, { title: string; body: string }> = {
 };
 
 async function notify(req: VercelRequest, res: VercelResponse, userId: string, userNome: string) {
-  const { tipo, winnerUserId } = req.body || {};
+  const { tipo, winnerUserId, evento, texto } = req.body || {};
   if (!TIPOS_VALIDOS.includes(tipo)) {
     res.status(400).json({ error: "tipo_invalido" });
+    return;
+  }
+
+  // ---- parceiroRotina: meta da rotina concluida, ou dia inteiro fechado ----
+  if (tipo === "parceiroRotina") {
+    const userAtual = await findUserById(userId);
+    const parceiroId = userAtual ? await getPartnerId(userAtual) : null;
+    if (!parceiroId) {
+      res.status(200).json({ ok: true, results: [] });
+      return;
+    }
+    const primeiroNome = (userNome || "Alguém").split(" ")[0];
+    const t = textoSeguro(texto);
+    const fechouODia = evento === "dia";
+    const result = await sendToUser(parceiroId, {
+      tipo: "parceiroRotina",
+      title: fechouODia ? "Dia fechado! 🔥" : "Meta concluída ✅",
+      body: fechouODia
+        ? `${primeiroNome} fechou o dia inteiro da rotina. A ofensiva de vocês dois segue viva.`
+        : `${primeiroNome} concluiu${t ? `: ${t}` : " uma meta da rotina."}`,
+      url: "/",
+    });
+    res.status(200).json({ ok: true, results: [result] });
     return;
   }
 

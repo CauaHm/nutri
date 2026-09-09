@@ -83,7 +83,7 @@ export default function AuthScreen({ auth }: AuthScreenProps) {
           <div style={{ width: 64, height: 64, borderRadius: 20, background: `linear-gradient(135deg,${PINK},${PURP})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 24px -8px ${PINK}80`, marginBottom: 14 }}>
             <IconDumbbell size={30} style={{ color: "#fff" }} />
           </div>
-          <div style={{ fontSize: 20, fontWeight: 800, background: `linear-gradient(90deg,${PINK},${PURP})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Rotina & Metas</div>
+          <div style={{ fontSize: 20, fontWeight: 800, background: `linear-gradient(90deg,${PINK},${PURP})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Pacto</div>
           <div style={{ fontSize: 11.5, color: SUB, marginTop: 2 }}>Treino, dieta e metas — a dois</div>
         </div>
 
