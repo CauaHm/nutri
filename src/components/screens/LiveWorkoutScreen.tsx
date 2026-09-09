@@ -23,6 +23,7 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
   // sido registrado. Agora digitar (ou usar o -/+) propoe concluir a serie,
   // depois de uma pausa pra nao perguntar no meio da digitacao.
   const [proposta, setProposta] = useState<{ setIndex: number; peso: string } | null>(null);
+  const [confirmarMarcarTudo, setConfirmarMarcarTudo] = useState(false);
   // Combinacao exercicio+serie+peso que a pessoa ja recusou: nao pergunta de
   // novo pelo mesmo valor (mas volta a perguntar se ela mudar o peso).
   const recusadasRef = useRef<Set<string>>(new Set());
@@ -188,6 +189,22 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
     setWeight(setIndex, proximo ? String(proximo) : "");
   };
 
+  // Pra quem treinou sem o celular na mao e so quer registrar depois. Nao
+  // dispara descanso (nao faria sentido em massa) nem mexe nos pesos: o que
+  // estiver preenchido — planejado ou ultima carga — e o que vai pro log.
+  const marcarTudo = () => {
+    cancelarProposta();
+    setProposta(null);
+    setConfirmarMarcarTudo(false);
+    updateSession({
+      ...session,
+      exercises: session.exercises.map((e) => ({ ...e, sets: e.sets.map((s) => ({ ...s, done: true })) })),
+    });
+  };
+
+  const totalSeries = session.exercises.reduce((n, e) => n + e.sets.length, 0);
+  const seriesPendentes = session.exercises.reduce((n, e) => n + e.sets.filter((s) => !s.done).length, 0);
+
   const goTo = (nextIndex: number) => {
     const clamped = Math.max(0, Math.min(session.exercises.length - 1, nextIndex));
     updateSession({ ...session, currentExerciseIndex: clamped });
@@ -336,6 +353,27 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
         </div>
 
         {proximoNome && <div style={{ fontSize: 11, color: SUB, textAlign: "center", marginBottom: 14 }}>A seguir: {proximoNome}</div>}
+
+        {seriesPendentes > 0 && (
+          confirmarMarcarTudo ? (
+            <div style={{ ...sCard, padding: 14, marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: TEXT, marginBottom: 3 }}>Marcar as {totalSeries} séries do treino como feitas?</div>
+              <div style={{ fontSize: 11, color: SUB, marginBottom: 11, lineHeight: 1.5 }}>Vale o treino inteiro, não só este exercício. Os pesos que estão preenchidos vão pro histórico.</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={{ ...sBtn(GRN), flex: 1 }} onClick={marcarTudo}>Sim, marcar tudo</button>
+                <button className="tapable" style={{ flex: 1, background: "#ffffff10", border: "none", borderRadius: 10, minHeight: 40, color: SUB, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }} onClick={() => setConfirmarMarcarTudo(false)}>Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmarMarcarTudo(true)}
+              className="tapable"
+              style={{ width: "100%", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: "#ffffff08", border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 12, fontWeight: 700, padding: "11px 0", cursor: "pointer" }}
+            >
+              <IconCheck size={15} /> Marcar todas as séries ({seriesPendentes} pendentes)
+            </button>
+          )
+        )}
 
         <button style={{ ...sBtn(GRN, true) }} onClick={finalizar}>Finalizar treino</button>
       </div>

@@ -255,6 +255,15 @@ já preenchido (o planejado, ou o último registrado) e tem botões de −/+ 2,5
 não ter que digitar no meio da série. No topo aparecem as **últimas cargas** daquele
 exercício com o PR destacado, pra decidir a carga de hoje olhando a de antes.
 
+Nem sempre o treino do dia acontece no dia (feriado, imprevisto), então "▶ Iniciar
+treino" abre uma confirmação com um seletor de qual treino você vai fazer — vem
+marcado o dia que você abriu, o dia de hoje aparece com "(hoje)" e dias sem exercício
+ficam de fora. "▶ Retomar treino" não pergunta nada: a sessão já é daquele dia.
+
+Quem treinou sem o celular na mão tem **"Marcar todas as séries"** dentro do treino ao
+vivo: marca o treino inteiro (não só o exercício aberto) de uma vez, pra depois só
+finalizar.
+
 Preencher o peso já conta como ter feito a série: pouco depois de digitar (ou de usar
 o −/+), aparece uma confirmação **"Série N com X kg — marcar como concluída?"** que,
 aceita, marca a série e já começa o descanso. Recusar não pergunta de novo pelo mesmo

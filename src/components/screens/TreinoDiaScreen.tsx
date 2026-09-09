@@ -5,7 +5,7 @@ import { PURP, PINK, GRN, RED, AMB, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl,
 import { getRestSeconds, inferDefaultRestSeconds } from "@/lib/restTimer";
 import { buildAutoSeriesPlan, getSeriesPlan } from "@/lib/seriesPlan";
 import { duplicarDia, duplicarExercicio, moverExercicio, copiarExercicioParaDia } from "@/lib/treinoEdit";
-import { DIAS_PT } from "@/lib/dates";
+import { DIAS_PT, weekdayPT } from "@/lib/dates";
 import type { ScreenProps } from "@/lib/screenProps";
 import type { Exercicio, SerieConfig, TipoSerie } from "@/lib/defaults";
 
@@ -173,7 +173,12 @@ export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps
   const [editDiaMeta, setEditDiaMeta] = useState(false);
   const [diaMetaTemp, setDiaMetaTemp] = useState<DiaMetaTemp | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
-  const [confirmSwitchSessao, setConfirmSwitchSessao] = useState(false);
+  // Escolha de qual treino comecar. Nem sempre o treino do dia acontece no
+  // dia: feriado, imprevisto, e ai a pessoa faz o de segunda numa terca. O
+  // padrao continua sendo o dia que ela abriu, so que agora da pra trocar
+  // antes de comecar em vez de ter que voltar e achar o outro dia.
+  const [iniciando, setIniciando] = useState(false);
+  const [diaEscolhido, setDiaEscolhido] = useState(di);
   const [copiarPara, setCopiarPara] = useState<number | null>(null);
   const [avisoCopia, setAvisoCopia] = useState("");
 
@@ -236,6 +241,10 @@ export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps
     setAvisoCopia(`Copiado pra ${treino[destino].dia} · ${treino[destino].tag}`);
     setTimeout(() => setAvisoCopia(""), 2500);
   };
+
+  const hojePT = weekdayPT();
+  const escolhido = treino[diaEscolhido];
+  const sessaoEmOutroDia = !!liveSession && liveSession.dayIndex !== diaEscolhido;
 
   const sAcao = (cor: string): React.CSSProperties => ({ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, flex: 1, background: `${cor}18`, border: `1px solid ${cor}35`, borderRadius: 8, color: cor, fontSize: 10.5, fontWeight: 700, padding: "8px 4px", cursor: "pointer" });
 
@@ -363,22 +372,47 @@ export default function TreinoDiaScreen({ data, nav, rest, params }: ScreenProps
 
         {dia.exercicios.length > 0 && (
           <div style={{ marginTop: 14 }}>
-            {confirmSwitchSessao ? (
+            {iniciando ? (
               <div style={{ ...sCard, padding: 14 }}>
-                <div style={{ fontSize: 12, color: SUB, lineHeight: 1.6, marginBottom: 10 }}>
-                  Você tem um treino em andamento em outro dia ({liveSession?.dayTag}). Iniciar este vai descartar o progresso anterior.
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button style={{ ...sBtn(user.cor), flex: 1 }} onClick={async () => { await saveLiveSession(null); setConfirmSwitchSessao(false); nav.push("treino-live", { dayIndex: di }); }}>Começar mesmo assim</button>
-                  <button style={{ ...sBtn("#444"), flex: 1 }} onClick={() => setConfirmSwitchSessao(false)}>Cancelar</button>
+                <div style={{ fontWeight: 700, fontSize: 13, color: TEXT, marginBottom: 2 }}>Qual treino você vai fazer?</div>
+                <div style={{ fontSize: 11, color: SUB, marginBottom: 8 }}>Hoje é {hojePT}. Dá pra fazer o treino de outro dia.</div>
+                <select style={sInp} value={diaEscolhido} onChange={(e) => setDiaEscolhido(Number(e.target.value))}>
+                  {treino.map((d, i) => d.exercicios.length > 0 && (
+                    <option key={i} value={i}>{d.emoji} {d.dia} · {d.tag}{d.dia === hojePT ? " (hoje)" : ""}</option>
+                  ))}
+                </select>
+                {escolhido && (
+                  <div style={{ fontSize: 11, color: SUB, marginTop: 8 }}>
+                    {escolhido.exercicios.length} exercícios{escolhido.info ? ` · ${escolhido.info}` : ""}
+                  </div>
+                )}
+                {sessaoEmOutroDia && (
+                  <div style={{ fontSize: 11.5, color: AMB, background: `${AMB}12`, borderRadius: 9, padding: "9px 11px", marginTop: 10, lineHeight: 1.5 }}>
+                    Você tem um treino em andamento ({liveSession?.dayTag}). Começar este vai descartar o progresso dele.
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <button
+                    style={{ ...sBtn(user.cor), flex: 1 }}
+                    onClick={async () => {
+                      if (sessaoEmOutroDia) await saveLiveSession(null);
+                      setIniciando(false);
+                      nav.push("treino-live", { dayIndex: diaEscolhido });
+                    }}
+                  >
+                    ▶ Começar
+                  </button>
+                  <button style={{ ...sBtn("#444"), flex: 1 }} onClick={() => setIniciando(false)}>Cancelar</button>
                 </div>
               </div>
             ) : (
               <button
                 style={{ ...sBtn(user.cor, true) }}
                 onClick={() => {
-                  if (liveSession && liveSession.dayIndex !== di) setConfirmSwitchSessao(true);
-                  else nav.push("treino-live", { dayIndex: di });
+                  // Retomar nao pergunta nada: a sessao ja e deste dia e a
+                  // pessoa so quer voltar de onde parou.
+                  if (liveSession?.dayIndex === di) nav.push("treino-live", { dayIndex: di });
+                  else { setDiaEscolhido(di); setIniciando(true); }
                 }}
               >
                 {liveSession?.dayIndex === di ? "▶ Retomar treino" : "▶ Iniciar treino"}
