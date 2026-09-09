@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import PrizeModal from "@/components/PrizeModal";
 import GoalAlertPopup from "@/components/GoalAlertPopup";
 import RestTimerBar from "@/components/RestTimerBar";
+import RestDonePopup from "@/components/RestDonePopup";
 import OfflineBanner from "@/components/OfflineBanner";
 import UpdatePrompt from "@/components/UpdatePrompt";
 import { useAuth, type AuthApi } from "@/lib/useAuth";
@@ -110,6 +111,7 @@ function AppShell({ auth }: { auth: AuthApi & { user: User } }) {
         <PrizeModal winnerUser={winnerUser} metaPontos={config.metaPontos} onNovaRodada={novaRodada} />
       )}
       <GoalAlertPopup alert={alert} onClose={dismiss} />
+      <RestDonePopup restDone={rest.restDone} onClose={rest.dismissRestDone} />
 
       <RootComp data={data} nav={nav} auth={auth} rest={rest} />
 

@@ -165,6 +165,15 @@ responde 404 e nunca toca no banco.** Como o segredo vai na URL, ele fica no
 histórico do navegador e nos logs de acesso: trate como uso pontual e troque o valor
 depois de usar.
 
+Pra conferir o que está salvo numa conta sem abrir o app, `api/admin/ver-treino.ts`
+devolve o treino como uma página legível (o mesmo `ADMIN_SECRET`, só leitura):
+
+```
+https://seu-projeto.vercel.app/api/admin/ver-treino?secret=SEU_ADMIN_SECRET&email=alguem@exemplo.com
+```
+
+Com `&formato=json` no fim vem o JSON cru em vez da página.
+
 ## Instalar como app no celular
 
 Abra o link da Vercel no navegador do celular (Safari no iPhone, Chrome no Android) e
@@ -245,3 +254,12 @@ Durante o treino ao vivo, cada série mostra as repetições planejadas, vem com
 já preenchido (o planejado, ou o último registrado) e tem botões de −/+ 2,5 kg pra
 não ter que digitar no meio da série. No topo aparecem as **últimas cargas** daquele
 exercício com o PR destacado, pra decidir a carga de hoje olhando a de antes.
+
+Preencher o peso já conta como ter feito a série: pouco depois de digitar (ou de usar
+o −/+), aparece uma confirmação **"Série N com X kg — marcar como concluída?"** que,
+aceita, marca a série e já começa o descanso. Recusar não pergunta de novo pelo mesmo
+peso, mas volta a perguntar se você mudar o valor. Marcar no círculo continua
+funcionando igual. E quando o descanso zera, além do som/vibração, abre um **popup**
+que fica na tela até você fechar — o som passa batido com o celular no bolso, e a
+notificação do sistema só aparece se a permissão foi concedida. Descanso que terminou
+há mais de 5 minutos (app fechado no meio do treino) não avisa nada.

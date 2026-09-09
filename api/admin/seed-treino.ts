@@ -1,5 +1,5 @@
-import crypto from "crypto";
 import type { VercelRequest, VercelResponse } from "../_lib/types";
+import { autorizado } from "../_lib/adminAuth";
 import { seedTreino } from "../_lib/seedTreino";
 import treinoRhebecca from "../_lib/treinoRhebecca.json";
 
@@ -14,46 +14,12 @@ import treinoRhebecca from "../_lib/treinoRhebecca.json";
 //   &email=...  aponta a conta na mao (quando mais de uma bate com "rhebecca")
 //
 // ADMIN_SECRET tem que estar configurada nas env vars da Vercel; sem ela a
-// rota responde 404 e nunca toca no banco (falha fechado, mesmo espirito do
-// isAuthorized de api/cron/reminders.ts).
+// rota responde 404 e nunca toca no banco — ver api/_lib/adminAuth.ts.
 
 const BUSCA_PADRAO = "rhebecca";
 
-// Aceita o segredo no header (curl) OU na query (navegador do celular, onde
-// nao da pra mandar header). Comparacao em tempo constante nos dois casos.
-function segredoDaRequisicao(req: VercelRequest): string | null {
-  const auth = req.headers["authorization"];
-  if (typeof auth === "string" && auth.startsWith("Bearer ")) return auth.slice("Bearer ".length);
-  const q = req.query.secret;
-  if (typeof q === "string" && q) return q;
-  return null;
-}
-
-function conferaSegredo(recebido: string, esperado: string): boolean {
-  const a = Buffer.from(recebido);
-  const b = Buffer.from(esperado);
-  // timingSafeEqual exige o mesmo tamanho — o comprimento em si nao e
-  // segredo, entao comparar antes nao vaza nada util.
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const esperado = process.env.ADMIN_SECRET;
-  // Sem ADMIN_SECRET configurada a rota simplesmente nao existe — 404 em vez
-  // de 401 pra nao anunciar que ha uma rota administrativa aqui.
-  if (!esperado) {
-    res.status(404).json({ error: "not_found" });
-    return;
-  }
-  if (req.method !== "GET" && req.method !== "POST") {
-    res.status(405).json({ error: "method_not_allowed" });
-    return;
-  }
-  const recebido = segredoDaRequisicao(req);
-  if (!recebido || !conferaSegredo(recebido, esperado)) {
-    res.status(401).json({ error: "unauthorized" });
-    return;
-  }
+  if (!autorizado(req, res)) return;
 
   const email = typeof req.query.email === "string" ? req.query.email : undefined;
   const confirmar = req.query.confirm === "1";

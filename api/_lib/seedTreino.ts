@@ -29,12 +29,15 @@ export interface SeedResultado {
 // $regex passaria batido la e a rota nunca acharia ninguem em dev. find({})
 // em todas as contas segue o mesmo precedente de api/cron/reminders.ts —
 // ok na escala de duas pessoas deste app.
-export async function seedTreino(opts: {
-  treino: unknown[];
-  email?: string;
-  busca: string;
-  confirmar: boolean;
-}): Promise<SeedResultado> {
+export type ContaEncontrada =
+  | { ok: true; user: User }
+  | { ok: false; erro: "conta_nao_encontrada" }
+  | { ok: false; erro: "varias_contas"; candidatos: string[] };
+
+// Acha a conta por e-mail exato ou, na falta dele, por um trecho do e-mail.
+// Compartilhado pelas rotas administrativas pra que "qual conta e essa" seja
+// respondido do mesmo jeito em todas.
+export async function acharConta(opts: { email?: string; busca: string }): Promise<ContaEncontrada> {
   const db = await getDb();
   const todos = await (await db.collection<User>("users").find({})).toArray();
 
@@ -44,16 +47,26 @@ export async function seedTreino(opts: {
     alvo ? String(u.email).toLowerCase() === alvo : String(u.email).toLowerCase().includes(busca),
   );
 
-  if (encontrados.length === 0) {
-    return { ok: false, erro: "conta_nao_encontrada", gravado: false };
-  }
+  if (encontrados.length === 0) return { ok: false, erro: "conta_nao_encontrada" };
   // Nunca chuta qual conta e quando mais de uma bate — quem chamou escolhe
   // passando o e-mail exato.
-  if (encontrados.length > 1) {
-    return { ok: false, erro: "varias_contas", candidatos: encontrados.map((u) => u.email), gravado: false };
+  if (encontrados.length > 1) return { ok: false, erro: "varias_contas", candidatos: encontrados.map((u) => u.email) };
+  return { ok: true, user: encontrados[0] };
+}
+
+export async function seedTreino(opts: {
+  treino: unknown[];
+  email?: string;
+  busca: string;
+  confirmar: boolean;
+}): Promise<SeedResultado> {
+  const conta = await acharConta(opts);
+  if (!conta.ok) {
+    return { ok: false, erro: conta.erro, candidatos: conta.erro === "varias_contas" ? conta.candidatos : undefined, gravado: false };
   }
 
-  const user = encontrados[0];
+  const db = await getDb();
+  const user = conta.user;
   const chave = `${user._id}_treino`;
   const kv = db.collection<{ _id: string; value: any }>("kv");
   const atual = await kv.findOne({ _id: chave });

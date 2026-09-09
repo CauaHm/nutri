@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { IconCheck, IconChevronLeft, IconChevronRight } from "@/components/icons";
-import { PINK, PURP, GRN, AMB, RED, SUB, BORDER, TEXT, CARD2, sCard, sInp, sLbl, sBtn } from "@/lib/theme";
+import { PINK, PURP, GRN, AMB, RED, SUB, BORDER, TEXT, CARD, CARD2, SHADOW_POP, sCard, sInp, sBtn } from "@/lib/theme";
 import { todayStr } from "@/lib/dates";
 import { getRestSeconds } from "@/lib/restTimer";
 import { buildInitialSession, computeSummary, workingSets, historicoDoExercicio, recordeDoExercicio, repsParaLog, type LiveWorkoutSession, type SessionSummary } from "@/lib/liveWorkout";
@@ -17,6 +17,28 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
   const [notaAberta, setNotaAberta] = useState(false);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const preSessionWeightLogs = useRef<WeightLog[]>(weightLogs);
+
+  // Preencher o peso ja e o sinal de que a serie foi feita — antes so o
+  // circulo marcava, e dava pra treinar inteiro sem perceber que nada tinha
+  // sido registrado. Agora digitar (ou usar o -/+) propoe concluir a serie,
+  // depois de uma pausa pra nao perguntar no meio da digitacao.
+  const [proposta, setProposta] = useState<{ setIndex: number; peso: string } | null>(null);
+  // Combinacao exercicio+serie+peso que a pessoa ja recusou: nao pergunta de
+  // novo pelo mesmo valor (mas volta a perguntar se ela mudar o peso).
+  const recusadasRef = useRef<Set<string>>(new Set());
+  const propostaTimerRef = useRef<number | null>(null);
+  const cancelarProposta = () => {
+    if (propostaTimerRef.current) window.clearTimeout(propostaTimerRef.current);
+    propostaTimerRef.current = null;
+  };
+
+  useEffect(() => cancelarProposta, []);
+
+  // Trocou de exercicio: a pergunta pendente era sobre o anterior.
+  useEffect(() => {
+    cancelarProposta();
+    setProposta(null);
+  }, [liveSession?.currentExerciseIndex]);
 
   const matchesThisDay = liveSession && liveSession.dayIndex === dayIndex;
   const hasOtherSession = liveSession && !matchesThisDay;
@@ -132,17 +154,29 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
       i === exIndex ? { ...e, sets: e.sets.map((s, j) => (j === setIndex ? { ...s, done: !s.done } : s)) } : e
     );
     const willBeDone = !exProgress.sets[setIndex].done;
+    cancelarProposta();
+    setProposta(null);
     updateSession({ ...session, exercises: nextExercises });
     if (willBeDone) {
       rest.start(getRestSeconds(exOriginal, dia), exOriginal.nome, { exId: exOriginal.id, dayIndex });
     }
   };
 
+  // 1,2s depois da ultima mexida no peso — tempo suficiente pra digitar "42,5"
+  // inteiro ou dar varios toques no +, sem a pergunta pulando no meio.
+  const PAUSA_PROPOSTA_MS = 1200;
+
   const setWeight = (setIndex: number, weight: string) => {
     const nextExercises = session.exercises.map((e, i) =>
       i === exIndex ? { ...e, sets: e.sets.map((s, j) => (j === setIndex ? { ...s, weight } : s)) } : e
     );
     updateSession({ ...session, exercises: nextExercises });
+
+    cancelarProposta();
+    if (!weight.trim() || exProgress.sets[setIndex].done) return;
+    const chave = `${exIndex}:${setIndex}:${weight}`;
+    if (recusadasRef.current.has(chave)) return;
+    propostaTimerRef.current = window.setTimeout(() => setProposta({ setIndex, peso: weight }), PAUSA_PROPOSTA_MS);
   };
 
   // Passo de 2,5kg nos botoes -/+ : digitar numero em teclado de celular no
@@ -305,6 +339,45 @@ export default function LiveWorkoutScreen({ data, nav, rest, params }: ScreenPro
 
         <button style={{ ...sBtn(GRN, true) }} onClick={finalizar}>Finalizar treino</button>
       </div>
+
+      {/* Confirmacao de "peso preenchido = serie feita". E uma barra em baixo,
+          nao um modal centralizado, pra nao tapar a lista de series — a
+          pessoa precisa ver de qual serie a pergunta esta falando. So aparece
+          se a serie continuar pendente (se ela marcou no circulo enquanto
+          isso, a pergunta se resolveu sozinha). */}
+      {proposta && !exProgress.sets[proposta.setIndex]?.done && (
+        <div
+          className="fade-in-up"
+          style={{ position: "fixed", left: 10, right: 10, bottom: "calc(env(safe-area-inset-bottom,0px) + 12px)", zIndex: 30, background: CARD, border: `1px solid ${GRN}55`, borderRadius: 14, boxShadow: SHADOW_POP, padding: 14 }}
+        >
+          <div style={{ fontSize: 12.5, color: TEXT, marginBottom: 3 }}>
+            <strong>Série {proposta.setIndex + 1}</strong> com <strong>{proposta.peso}kg</strong>
+          </div>
+          <div style={{ fontSize: 11.5, color: SUB, marginBottom: 11 }}>Marcar como concluída e começar o descanso?</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="tapable"
+              style={{ ...sBtn(GRN), flex: 1 }}
+              onClick={() => { const i = proposta.setIndex; setProposta(null); toggleSet(i); }}
+            >
+              Sim, concluir
+            </button>
+            {/* Neutro de proposito: sBtn() sempre vira gradiente ate o roxo, e
+                aqui as duas opcoes ficariam com o mesmo peso visual — ruim
+                num dialogo em que uma marca a serie e a outra nao. */}
+            <button
+              className="tapable"
+              style={{ flex: 1, background: "#ffffff10", border: "none", borderRadius: 10, minHeight: 40, color: SUB, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+              onClick={() => {
+                recusadasRef.current.add(`${exIndex}:${proposta.setIndex}:${proposta.peso}`);
+                setProposta(null);
+              }}
+            >
+              Ainda não
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

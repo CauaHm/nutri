@@ -15,6 +15,11 @@ export interface RestTimerApi {
   start: (seconds: number, label: string, meta?: { exId?: number; dayIndex?: number }) => void;
   adjust: (deltaSeconds: number) => void;
   skip: () => void;
+  // Aviso de "acabou o descanso" que fica de pe ate a pessoa fechar. Separado
+  // de timer.completed de proposito: a barra some sozinha 3s depois de zerar,
+  // e um popup que some sozinho nao serve pra quem largou o celular no banco.
+  restDone: { label: string } | null;
+  dismissRestDone: () => void;
 }
 
 interface Persisted {
@@ -25,6 +30,11 @@ interface Persisted {
   dayIndex?: number;
 }
 
+// Descanso que terminou ha muito tempo nao avisa nada: se a pessoa fechou o
+// app no meio da serie e voltou horas depois, apitar e abrir popup de
+// "acabou o descanso" e so barulho. Vale pro som/vibracao e pro popup.
+const AVISO_VALIDO_MS = 5 * 60 * 1000;
+
 // Timer de descanso global — sobrevive a navegacao entre telas porque e
 // instanciado uma unica vez em AppShell (App.tsx) e o estado fica em
 // localStorage, nao dentro de um componente de tela que desmonta. O tempo
@@ -34,6 +44,7 @@ interface Persisted {
 export function useRestTimer(userId: string | null | undefined): RestTimerApi {
   const [persisted, setPersisted] = useState<Persisted | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [restDone, setRestDone] = useState<{ label: string } | null>(null);
   const [, bump] = useState(0);
   const storageKey = userId ? `rm_resttimer_${userId}` : null;
 
@@ -56,7 +67,10 @@ export function useRestTimer(userId: string | null | undefined): RestTimerApi {
       const remaining = Math.max(0, Math.round((persisted.endAt - Date.now()) / 1000));
       if (remaining <= 0 && !completed) {
         setCompleted(true);
-        fireRestComplete(persisted.label);
+        if (Date.now() - persisted.endAt < AVISO_VALIDO_MS) {
+          fireRestComplete(persisted.label);
+          setRestDone({ label: persisted.label });
+        }
       }
       bump((n) => n + 1);
     };
@@ -89,6 +103,7 @@ export function useRestTimer(userId: string | null | undefined): RestTimerApi {
   }
 
   const start: RestTimerApi["start"] = (seconds, label, meta) => {
+    setRestDone(null); // comecou outro descanso: o aviso do anterior nao serve mais
     unlockAudio();
     maybeRequestNotifPermission(userId);
     persist({ endAt: Date.now() + seconds * 1000, totalSeconds: seconds, label, ...meta });
@@ -103,7 +118,10 @@ export function useRestTimer(userId: string | null | undefined): RestTimerApi {
     });
   };
 
-  const skip: RestTimerApi["skip"] = () => persist(null);
+  const skip: RestTimerApi["skip"] = () => {
+    setRestDone(null);
+    persist(null);
+  };
 
   const timer: RestTimerState | null = persisted
     ? {
@@ -116,5 +134,5 @@ export function useRestTimer(userId: string | null | undefined): RestTimerApi {
       }
     : null;
 
-  return { timer, start, adjust, skip };
+  return { timer, start, adjust, skip, restDone, dismissRestDone: () => setRestDone(null) };
 }
