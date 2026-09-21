@@ -5,7 +5,8 @@
 
 export type TipoNotificacao =
   | "agua" | "treino" | "fimDeRodada" | "refeicao"
-  | "pesagem" | "parceiroPR" | "parceiroRanking" | "badge";
+  | "pesagem" | "parceiroPR" | "parceiroRanking" | "badge"
+  | "parceiroRotina";
 
 export interface NotificacoesConfig {
   agua: { on: boolean; horarios: string[] };
@@ -16,6 +17,8 @@ export interface NotificacoesConfig {
   parceiroPR: { on: boolean };
   parceiroRanking: { on: boolean };
   badge: { on: boolean };
+  /** Meta da rotina concluida pelo parceiro (e o fechamento do dia dele). */
+  parceiroRotina: { on: boolean };
   quietHours: { inicio: string; fim: string };
 }
 
@@ -28,6 +31,7 @@ export const NOTIFICACOES_PADRAO: NotificacoesConfig = {
   parceiroPR: { on: false },
   parceiroRanking: { on: false },
   badge: { on: false },
+  parceiroRotina: { on: true },
   quietHours: { inicio: "22:00", fim: "07:00" },
 };
 
@@ -45,6 +49,7 @@ export function mergeNotificacoes(saved?: Partial<NotificacoesConfig> | null): N
     parceiroPR: { ...NOTIFICACOES_PADRAO.parceiroPR, ...(s.parceiroPR || {}) },
     parceiroRanking: { ...NOTIFICACOES_PADRAO.parceiroRanking, ...(s.parceiroRanking || {}) },
     badge: { ...NOTIFICACOES_PADRAO.badge, ...(s.badge || {}) },
+    parceiroRotina: { ...NOTIFICACOES_PADRAO.parceiroRotina, ...(s.parceiroRotina || {}) },
     quietHours: { ...NOTIFICACOES_PADRAO.quietHours, ...(s.quietHours || {}) },
   };
 }

@@ -1,4 +1,4 @@
-# Rotina & Metas
+# Pacto
 
 App de treino, dieta, água e metas — com cadastro de verdade, convites e competição
 entre duas pessoas. Cada pessoa cria sua própria conta; convida quem quiser pra
@@ -9,6 +9,34 @@ Corporal e Nutrição** (% de gordura, TMB/TDEE, déficit calórico, macros, pla
 refeições calculado e comparação semana a semana), um **comparativo biológico**
 entre você e seu parceiro de treino, catálogo de alimentos (cadastro manual ou por
 foto com IA) e alertas quando uma meta do dia é batida ou passada.
+
+## Rotina & ofensiva
+
+O coração do app é a aba **Rotina**: a semana dos dois montada em blocos com dia e
+horário (acordar, fretado, água, estudo, academia, casa, cardio, lazer), cada bloco
+com uma **âncora** (“quando eu X, eu vou Y”) e uma **versão mínima** pro dia ruim.
+
+- **Agora** — o topo da tela mostra o bloco que está acontecendo agora, com um botão
+  só. O app responde “o que eu faço agora” em vez de perguntar.
+- **Timer de 5 minutos** — o compromisso nunca é o bloco inteiro. Passados os 5, a
+  meta já conta como feita; continuar pro bloco de 45 é opcional.
+- **Ofensiva** — dias em que *todas* as metas essenciais fecharam, individual e da
+  dupla (o dia da dupla só conta quando os dois fecham). Meta de 60 dias, com a
+  marca dos 21 sinalizada na barra.
+- **Escudo** — um dia perdido não zera a ofensiva; dois seguidos zeram. O escudo
+  recarrega a cada 7 dias fechados.
+- **Notificação na hora** — metas marcadas como “avisa” disparam push pro parceiro
+  no momento da conclusão, e fechar o dia inteiro sempre avisa.
+- **Revisão de domingo** — lista o que ficou sem marcação na semana e pergunta, uma
+  a uma, se foi feita em outro horário ou qual foi o motivo; no fim mostra a meta
+  que mais falhou, o dia mais difícil e o motivo mais repetido.
+
+Modelo e regras em `src/lib/rotina.ts`; estado em `src/lib/useRotina.ts`. As tarefas
+ficam sob a chave da competição (os dois editam a rotina da dupla); o log de
+conclusão é pessoal, sob o próprio usuário, e o parceiro só lê.
+
+Os ícones do PWA são gerados por `scripts/gerar-icones.py` (precisa de Pillow) — o
+símbolo é o X que se marca na parede quando o dia fecha.
 
 Construído em Vite + React + TypeScript (frontend puro, SPA) + Vercel Serverless
 Functions em TypeScript (backend) + MongoDB (contas, convites, competições e dados do

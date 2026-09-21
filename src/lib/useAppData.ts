@@ -8,6 +8,7 @@ import { defaultRefeicoes, defaultCompras, defaultReceitas, defaultTreinoGeneric
 import type { AtividadeExtra } from "./atividades";
 import { useBodyComp } from "./useBodyComp";
 import { useRPG } from "./useRPG";
+import { useRotina } from "./useRotina";
 import type { User } from "./types";
 import type { CompetitionApi } from "./useCompetition";
 import type { LiveWorkoutSession } from "./liveWorkout";
@@ -256,6 +257,18 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
   // "O Sistema" (camada de progressao RPG) — le os mesmos dados em paralelo,
   // nunca muda como calcPontos/o resto acima funciona. useBodyComp aqui e
   // uma segunda instancia isolada, so pra alimentar o atributo VIT.
+  // Rotina — tarefas diarias/semanais + ofensiva. Camada independente: le e
+  // escreve as proprias chaves (`*_rotina_*`), nunca toca em pontos/treino/
+  // refeicoes. As tarefas ficam sob `sharedPrefix` (os dois editam a rotina
+  // da dupla); o log de conclusao e pessoal, sob o proprio userId.
+  const rotina = useRotina({
+    userId,
+    outroId,
+    sharedPrefix,
+    temParceiro: !!comp.partner,
+    nome: authUser?.nome || "",
+  });
+
   const bodyComp = useBodyComp(authUser);
   const rpg = useRPG({
     ready: ready && bodyComp.ready,
@@ -274,7 +287,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
 
   return {
     ready, userId, outroId, user, outroUser,
-    config: { metaPontos, appName: "Rotina & Metas" },
+    config: { metaPontos, appName: "Pacto" },
     treino, saveTreino,
     refeicoesCfg, saveRefeicoesCfg,
     mealLog, addFoodToMeal, removeFoodFromMeal, outroMealLog, todayTotais,
@@ -287,6 +300,7 @@ export function useAppData(authUser: User, comp: CompetitionApi) {
     compras, saveCompras, receitas, saveReceitas,
     recados, sendRecado,
     myStats, outroStats,
+    rotina,
     temParceiro: !!outroUser,
     invitesRecebidos: comp.invitesRecebidos,
     enviarConvite: comp.enviarConvite,
