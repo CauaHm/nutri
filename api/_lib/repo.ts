@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { getDb, ObjectId } from "./db";
 import { NOTIFICACOES_PADRAO, type NotificacoesConfig } from "./notificacoes";
@@ -6,7 +5,10 @@ import { NOTIFICACOES_PADRAO, type NotificacoesConfig } from "./notificacoes";
 export interface User {
   _id: string;
   email: string;
-  passwordHash: string;
+  // Contas criadas antes do login passar a ser so por e-mail ainda tem o
+  // hash gravado; nada le esse campo. Fica opcional em vez de ser apagado
+  // do banco — remover dado de conta so pra limpar tipo nao vale o risco.
+  passwordHash?: string;
   nome: string;
   emoji: string;
   cor: string;
@@ -28,12 +30,6 @@ export type PublicUser = Omit<User, "passwordHash">;
 
 export interface Session {
   _id: string;
-  userId: string;
-  expiresAt: string;
-}
-
-export interface PasswordReset {
-  _id: string; // o proprio token — mesma convencao de Session._id
   userId: string;
   expiresAt: string;
 }
@@ -66,18 +62,16 @@ const norm = (email?: string | null): string => String(email || "").trim().toLow
 
 // ---- Usuarios -------------------------------------------------------
 
-export async function createUser({ email, senha, nome }: { email: string; senha: string; nome?: string }): Promise<{ user?: User; error?: string }> {
+export async function createUser({ email, nome }: { email: string; nome?: string }): Promise<{ user?: User; error?: string }> {
   const db = await getDb();
   const users = db.collection<User>("users");
   const existing = await users.findOne({ email: norm(email) });
   if (existing) return { error: "email_em_uso" };
 
-  const passwordHash = await bcrypt.hash(senha, 10);
   const _id = new ObjectId().toString();
   const doc: User = {
     _id,
     email: norm(email),
-    passwordHash,
     nome: nome || norm(email).split("@")[0],
     emoji: "🙂",
     cor: "#e040fb",
@@ -96,12 +90,14 @@ export async function createUser({ email, senha, nome }: { email: string; senha:
   return { user: doc };
 }
 
-export async function verifyLogin({ email, senha }: { email: string; senha: string }): Promise<{ user?: User; error?: string }> {
+// Login e so por e-mail: o app e de uso pessoal de duas pessoas e a
+// recuperacao de senha nunca funcionou de verdade (depende de um servico de
+// e-mail que nunca foi configurado), entao a senha so atrapalhava. O e-mail
+// passa a ser a credencial — quem souber o endereco entra na conta.
+export async function verifyLogin({ email }: { email: string }): Promise<{ user?: User; error?: string }> {
   const db = await getDb();
   const user = await db.collection<User>("users").findOne({ email: norm(email) });
-  if (!user) return { error: "credenciais_invalidas" };
-  const ok = await bcrypt.compare(senha, user.passwordHash);
-  if (!ok) return { error: "credenciais_invalidas" };
+  if (!user) return { error: "conta_nao_encontrada" };
   return { user };
 }
 
@@ -151,51 +147,6 @@ export async function findSession(token?: string | null): Promise<Session | null
 export async function deleteSession(token: string): Promise<void> {
   const db = await getDb();
   await db.collection<Session>("sessions").deleteOne({ _id: token });
-}
-
-export async function deleteAllSessionsForUser(userId: string): Promise<void> {
-  const db = await getDb();
-  const col = db.collection<Session>("sessions");
-  const rows = await (await col.find({ userId: String(userId) })).toArray();
-  await Promise.all(rows.map((s) => col.deleteOne({ _id: s._id })));
-}
-
-// ---- Recuperacao de senha ----------------------------------------------
-
-const RESET_MINUTOS = 60;
-
-export async function createPasswordReset(userId: string): Promise<string> {
-  const db = await getDb();
-  const col = db.collection<PasswordReset>("password_resets");
-
-  // Derruba qualquer token anterior desse usuario antes de criar um novo —
-  // evita ter mais de um link "valido" circulando ao mesmo tempo se a
-  // pessoa pedir recuperacao mais de uma vez.
-  const antigos = await (await col.find({ userId: String(userId) })).toArray();
-  await Promise.all(antigos.map((r) => col.deleteOne({ _id: r._id })));
-
-  const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + RESET_MINUTOS * 60 * 1000).toISOString();
-  await col.insertOne({ _id: token, userId: String(userId), expiresAt });
-  return token;
-}
-
-// Uso unico: o token e apagado aqui independente do resultado, entao uma
-// segunda tentativa com o mesmo token (valido ou ja expirado) sempre falha.
-export async function consumePasswordReset(token: string): Promise<string | null> {
-  if (!token) return null;
-  const db = await getDb();
-  const col = db.collection<PasswordReset>("password_resets");
-  const reset = await col.findOne({ _id: token });
-  if (!reset) return null;
-  await col.deleteOne({ _id: token });
-  if (new Date(reset.expiresAt) < new Date()) return null;
-  return reset.userId;
-}
-
-export async function setUserPassword(userId: string, senha: string): Promise<void> {
-  const passwordHash = await bcrypt.hash(senha, 10);
-  await updateUser(userId, { passwordHash });
 }
 
 // ---- Convites -----------------------------------------------------------

@@ -5,13 +5,11 @@ import { ensureCacheIsolation, ensurePushIsolation } from "./apiCacheGuard";
 export interface AuthApi {
   user: User | null;
   ready: boolean;
-  signup: (payload: { email: string; senha: string; nome?: string }) => Promise<{ ok: boolean; user?: User; error?: string }>;
-  login: (payload: { email: string; senha: string }) => Promise<{ ok: boolean; user?: User; error?: string }>;
+  signup: (payload: { email: string; nome?: string }) => Promise<{ ok: boolean; user?: User; error?: string }>;
+  login: (payload: { email: string }) => Promise<{ ok: boolean; user?: User; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (patch: Partial<User>) => Promise<User | null>;
   refresh: () => Promise<void>;
-  forgotPassword: (payload: { email: string }) => Promise<{ ok: boolean; error?: string }>;
-  resetPassword: (payload: { token: string; senha: string }) => Promise<{ ok: boolean; user?: User; error?: string }>;
 }
 
 export function useAuth(): AuthApi {
@@ -49,10 +47,8 @@ export function useAuth(): AuthApi {
     return { ok: r.ok, ...data };
   };
 
-  const signup = (payload: { email: string; senha: string; nome?: string }) => call("/api/auth/signup", payload);
-  const login = (payload: { email: string; senha: string }) => call("/api/auth/login", payload);
-  const forgotPassword = (payload: { email: string }) => call("/api/auth/forgot-password", payload);
-  const resetPassword = (payload: { token: string; senha: string }) => call("/api/auth/reset-password", payload);
+  const signup = (payload: { email: string; nome?: string }) => call("/api/auth/signup", payload);
+  const login = (payload: { email: string }) => call("/api/auth/login", payload);
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -69,5 +65,5 @@ export function useAuth(): AuthApi {
     return null;
   };
 
-  return { user, ready, signup, login, logout, updateProfile, refresh, forgotPassword, resetPassword };
+  return { user, ready, signup, login, logout, updateProfile, refresh };
 }
